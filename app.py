@@ -1,24 +1,31 @@
 import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
-from src.utils import get_data, compare_plots, filter_search
+from src.utils import compare_plots, filter_search, get_github_data, get_current_urls
 
 ############################ For Leaderboards #############################
-DATA_PATH = 'versions'
-latest_flag = True #Set flag to iclude latest data in Details and Versions Tab
-latest_df, latest_vname, previous_df, previous_vname = get_data(DATA_PATH, latest_flag)
+global URLS, VERS, latest_df, all_dfs, all_vnames
+username = 'clembench'
+repo = 'clembench-runs'
+
+URLS, VERS = get_current_urls(username, repo)
+
+latest_df, all_dfs, all_vnames = get_github_data(URLS, VERS)
 
 global prev_df
-prev_df = previous_df[0]
+prev_df = all_dfs[0]
 def select_prev_df(name):
-    ind = previous_vname.index(name)
-    prev_df = previous_df[ind]
+    ind = all_vnames.index(name)
+    prev_df = all_dfs[ind]
     return prev_df
 
 ############################ For Plots ####################################
 global plot_df, MODEL_COLS
 plot_df = latest_df[0]
 MODEL_COLS = list(plot_df['Model'].unique())
+
+
+########################## For Background Scheduler #######################
 
 
 ############# MAIN APPLICATION ######################
@@ -86,7 +93,7 @@ with demo:
         with gr.TabItem("🔄 Versions and Details", elem_id="details", id=2):
             with gr.Row():
                 ver_selection = gr.Dropdown(
-                    previous_vname, label="Select Version 🕹️", value=previous_vname[0]
+                    all_vnames, label="Select Version 🕹️", value=all_vnames[0]
                 )
             with gr.Row():
                 search_bar_prev = gr.Textbox(
