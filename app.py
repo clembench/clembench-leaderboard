@@ -1,7 +1,7 @@
 import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
-from src.utils import compare_plots, filter_search, get_github_data, get_current_urls
+from src.utils import compare_plots, filter_search, get_github_data, get_current_urls, split_models
 
 ############################ For Leaderboards #############################
 global URLS, VERS, latest_df, all_dfs, all_vnames
@@ -20,10 +20,10 @@ def select_prev_df(name):
     return prev_df
 
 ############################ For Plots ####################################
-global plot_df, MODEL_COLS
+global plot_df, MODEL_COLS, OPEN_MODELS, COMM_MODELS
 plot_df = latest_df[0]
 MODEL_COLS = list(plot_df['Model'].unique())
-
+OPEN_MODELS, COMM_MODELS = split_models(MODEL_COLS)
 
 ########################## For Background Scheduler #######################
 
@@ -66,11 +66,20 @@ with demo:
             )
         with gr.TabItem("📈 Plot", id=3):
             with gr.Row():
-                model_cols = gr.CheckboxGroup(
-                    MODEL_COLS, 
-                    label="Select Models 🤖", 
+                open_model_cols = gr.CheckboxGroup(
+                    OPEN_MODELS, 
+                    label="Select Open Source Models 🤖", 
                     value=[],
                     elem_id="column-select",
+                    interactive=True,
+                )
+
+            with gr.Row():
+                comm_model_cols = gr.CheckboxGroup(
+                    COMM_MODELS, 
+                    label="Select Commercial Models 🤖", 
+                    value=[],
+                    elem_id="column-select-2",
                     interactive=True,
                 )
 
@@ -83,9 +92,16 @@ with demo:
                 # Output block for the plot
                 plot_output = gr.Plot()
 
-            model_cols.change(
+            open_model_cols.change(
                 compare_plots,
-                [plot_grdf, model_cols],
+                [plot_grdf, open_model_cols, comm_model_cols],
+                plot_output,
+                queue=True
+            )
+
+            comm_model_cols.change(
+                compare_plots,
+                [plot_grdf, open_model_cols, comm_model_cols],
                 plot_output,
                 queue=True
             )

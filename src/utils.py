@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 from src.assets.text_content import SHORT_NAMES
 def get_current_urls(username: str = 'clembench', repo: str = 'clembench-runs') -> pd.DataFrame:
     '''
@@ -19,7 +20,7 @@ def get_current_urls(username: str = 'clembench', repo: str = 'clembench-runs') 
     base_url = f'https://api.github.com/repos/{username}/{repo}/contents/''?ref=main' # By default use the main branch
 
     # Add a token authorised by organization
-    token = "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"
+    token = ""
     headers = {}
     if token:
         headers['Authorization'] = f'Token {token}'
@@ -135,14 +136,18 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 # ['Model', 'Clemscore', 'All(Played)', 'All(Quality Score)']
-def compare_plots(df: pd.DataFrame, LIST: list):
+def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list):
     '''
     Quality Score v/s % Played plot by selecting models
     Args:
-        LIST: The list of models to show in the plot, updated from frontend
+        LIST1: The list of open source models to show in the plot, updated from frontend
+        LIST2: The list of commercial models to show in the plot, updated from frontend
     Returns:
         fig: The plot
     '''
+    # Combine lists for Open source and commercial models
+    LIST = LIST1 + LIST2
+
     short_names = label_map(LIST)
 
     list_columns = list(df.columns)
@@ -236,3 +241,21 @@ def filter_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
 
     return filtered_df
     
+def split_models(MODEL_LIST: list):
+    '''
+    Split the models into open source and commercial
+    '''
+    open_models = []
+    comm_models = []
+
+    for model in MODEL_LIST:
+        if model.startswith(('gpt-', 'claude-', 'command')):
+            open_models.append(model)
+        else:
+            comm_models.append(model)
+
+    open_models.sort()
+    comm_models.sort()
+    return open_models, comm_models
+
+
