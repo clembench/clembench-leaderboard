@@ -5,7 +5,9 @@ The CLEM Leaderboard aims to track, rank and evaluate current cLLMs (chat-optimi
 
 The benchmarking approach is described in [Clembench: Using Game Play to Evaluate Chat-Optimized Language Models as Conversational Agents](https://arxiv.org/abs/2305.13455).
 
-[Github repo](https://github.com/clembench/clembench)
+Source code benchmarking "clems" is available here: [Clembench](https://github.com/clembench/clembench)
+
+All generated files and results from the benchmark runs are available here: [clembench-runs](https://github.com/clembench/clembench-runs)
 """
 
 SHORT_NAMES = {
