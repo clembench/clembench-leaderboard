@@ -3,19 +3,21 @@ from io import StringIO
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
+# Set the folder name to save csv files
+global csvs_path
+csvs_path = 'versions'
 
 from src.assets.text_content import SHORT_NAMES
-def get_current_urls(username: str = 'clembench', repo: str = 'clembench-runs') -> pd.DataFrame:
+def get_github_data(username: str = 'clembench', repo: str = 'clembench-runs') -> pd.DataFrame:
     '''
-    Periodically get urls of csv files
+    Periodically read csv files from github and save/update them in 'csvs_path'
     Used in APSchedular
     Args:
         username: clembench (organization of the repository)
         repo: clembench-runs (repository name)
-    Returns:
-        csv_urls: URLs for results.csvs for all versions
-        filtered_content: sorted list of all the versions (latest first)
+    Returns: None
     '''
     base_url = f'https://api.github.com/repos/{username}/{repo}/contents/''?ref=main' # By default use the main branch
 
@@ -37,42 +39,41 @@ def get_current_urls(username: str = 'clembench', repo: str = 'clembench-runs') 
 
     filtered_content = [s for s in list_content if s.startswith('v')]
 
-    # Sort by latest version
-    float_content = [float(s[1:]) for s in filtered_content]
-    float_content.sort(reverse=True)
-    filtered_content = ['v'+str(s) for s in float_content]
+    # Check if path already exists
+    if not os.path.exists(csvs_path):
+        os.mkdir(csvs_path)
 
-    csv_urls = []
+    # Save csv locally
     for content in filtered_content:
         raw_url = f'https://raw.githubusercontent.com/{username}/{repo}/main/{content}/results.csv'
-        csv_urls.append(raw_url)
+        df = pd.read_csv(raw_url)
+        save_path = os.path.join(csvs_path, content + '.csv')
+        df.to_csv(save_path, index=False)
 
-    return csv_urls, filtered_content
-
-
-def get_github_data(urls: list, vers: list):
+def get_csv_data():
     '''
-    Get data from clembench-runs repository
+    Get data from csv files saved locally
     Args:
-        urls: A list containing github URLS of csv files of all versions
-        vers: A list of all versions
+        None
     Returns: 
         latest_df: singular list containing dataframe of the latest version of the leaderboard with only 4 columns 
         all_dfs: list of dataframes for previous versions + latest version including columns for all games
         all_vnames: list of the names for the previous versions + latest version (For Details and Versions Tab Dropdown)
     '''
+    list_vers = os.listdir(csvs_path)
+    list_vers = [s.split('.csv')[0] for s in list_vers]
+    # Sort by latest version
+    float_content = [float(s[1:]) for s in list_vers]
+    float_content.sort(reverse=True)
+    list_vers = ['v'+str(s) for s in float_content]
 
     DFS = []
-    for url in urls:
-        response = requests.get(url)
-        if response.status_code == 200:
-            csv_content = StringIO(response.text)
-            df = pd.read_csv(csv_content)
-            df = process_df(df)
-            df = df.sort_values(by=list(df.columns)[1], ascending=False) # Sort by clemscore
-            DFS.append(df)
-        else:
-            print(f"Failed to fetch CSV file at {url}. Status code: {response.status_code}")
+    for csv in list_vers:
+        read_path = os.path.join(csvs_path, csv + '.csv')
+        df = pd.read_csv(read_path)
+        df = process_df(df)
+        df = df.sort_values(by=list(df.columns)[1], ascending=False) # Sort by clemscore
+        DFS.append(df)
 
     # Only keep relavant columns for the main leaderboard
     latest_df_dummy = DFS[0]
@@ -83,7 +84,7 @@ def get_github_data(urls: list, vers: list):
     latest_df = [latest_df_dummy]
     all_dfs = []
     all_vnames = []
-    for df, name in zip(DFS, vers):
+    for df, name in zip(DFS, list_vers):
         all_dfs.append(df)
         all_vnames.append(name) 
 

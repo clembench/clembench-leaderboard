@@ -1,16 +1,17 @@
 import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
-from src.utils import compare_plots, filter_search, get_github_data, get_current_urls, split_models
+from src.utils import compare_plots, filter_search, get_github_data, get_csv_data, split_models
 
 ############################ For Leaderboards #############################
-global URLS, VERS, latest_df, all_dfs, all_vnames
 username = 'clembench'
 repo = 'clembench-runs'
 
-URLS, VERS = get_current_urls(username, repo)
+# Save github data locally 
+get_github_data(username, repo)
 
-latest_df, all_dfs, all_vnames = get_github_data(URLS, VERS)
+# Get CSV data
+latest_df, all_dfs, all_vnames = get_csv_data()
 
 global prev_df
 prev_df = all_dfs[0]
@@ -28,7 +29,7 @@ OPEN_MODELS, COMM_MODELS = split_models(MODEL_COLS)
 ########################## For Background Scheduler #######################
 
 
-############# MAIN APPLICATION ######################
+# ############# MAIN APPLICATION ######################
 demo = gr.Blocks()
 with demo:
     gr.HTML(TITLE)
