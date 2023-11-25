@@ -1,47 +1,101 @@
-import os
+import requests
+from io import StringIO
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import os
+
+# Set the folder name to save csv files
+global csvs_path
+csvs_path = 'versions'
 
 from src.assets.text_content import SHORT_NAMES
-
-def update_cols(df: pd.DataFrame) -> pd.DataFrame:
+def get_github_data(username: str = 'clembench', repo: str = 'clembench-runs') -> pd.DataFrame:
     '''
-    Change three header rows to a single header row
+    Periodically read csv files from github and save/update them in 'csvs_path'
+    Used in APSchedular
     Args:
-        df: Raw dataframe containing 3 separate header rows
-            Remove this function if the dataframe has only one header row
-
-    Returns:
-        df: Updated dataframe which has only 1 header row instead of 3
+        username: clembench (organization of the repository)
+        repo: clembench-runs (repository name)
+    Returns: None
     '''
-    default_cols = list(df.columns)
+    base_url = f'https://api.github.com/repos/{username}/{repo}/contents/''?ref=main' # By default use the main branch
 
-    # First 4 columns are initalised in 'update', Append additional columns for games Model, Clemscore, ALL(PLayed) and ALL(Main Score)
-    update = ['Model', 'Clemscore', 'Played', 'Quality Score']
-    game_metrics = default_cols[4:]
+    # Add a token authorised by organization
+    token = ""
+    headers = {}
+    if token:
+        headers['Authorization'] = f'Token {token}'
 
-    # Change columns Names for each Game
-    for i in range(len(game_metrics)):
-        if i%3 == 0:
-            game = game_metrics[i]
-            update.append(str(game).capitalize() + "(Played)")
-            update.append(str(game).capitalize() + "(Quality Score)") 
-            update.append(str(game).capitalize() + "(Quality Score[std])")
+    response = requests.get(base_url, headers=headers)
+    if response.status_code == 200:
+        contents = response.json()
+    else:
+        print(f"Error: Unable to fetch contents. Status code: {response.status_code}")
 
-    # Create a dict to change names of the columns
-    map_cols = {}
-    for i in range(len(default_cols)):
-        map_cols[default_cols[i]] = str(update[i])
+    list_content = []
+    for c in contents:
+        list_content.append(c['name'])
 
-    df = df.rename(columns=map_cols)
-    df = df.iloc[2:]
+    filtered_content = [s for s in list_content if s.startswith('v')]
 
-    return df
+    # Check if path already exists
+    if not os.path.exists(csvs_path):
+        os.mkdir(csvs_path)
+
+    # Save csv locally
+    for content in filtered_content:
+        raw_url = f'https://raw.githubusercontent.com/{username}/{repo}/main/{content}/results.csv'
+        df = pd.read_csv(raw_url)
+        save_path = os.path.join(csvs_path, content + '.csv')
+        df.to_csv(save_path, index=False)
+
+def get_csv_data():
+    '''
+    Get data from csv files saved locally
+    Args:
+        None
+    Returns: 
+        latest_df: singular list containing dataframe of the latest version of the leaderboard with only 4 columns 
+        all_dfs: list of dataframes for previous versions + latest version including columns for all games
+        all_vnames: list of the names for the previous versions + latest version (For Details and Versions Tab Dropdown)
+    '''
+    list_vers = os.listdir(csvs_path)
+    list_vers = [s.split('.csv')[0] for s in list_vers]
+    # Sort by latest version
+    float_content = [float(s[1:]) for s in list_vers]
+    float_content.sort(reverse=True)
+    list_vers = ['v'+str(s) for s in float_content]
+
+    DFS = []
+    for csv in list_vers:
+        read_path = os.path.join(csvs_path, csv + '.csv')
+        df = pd.read_csv(read_path)
+        df = process_df(df)
+        df = df.sort_values(by=list(df.columns)[1], ascending=False) # Sort by clemscore
+        DFS.append(df)
+
+    # Only keep relavant columns for the main leaderboard
+    latest_df_dummy = DFS[0]
+    all_columns = list(latest_df_dummy.columns)
+    keep_columns = all_columns[0:4]
+    latest_df_dummy = latest_df_dummy.drop(columns=[c for c in all_columns if c not in keep_columns])
+
+    latest_df = [latest_df_dummy]
+    all_dfs = []
+    all_vnames = []
+    for df, name in zip(DFS, list_vers):
+        all_dfs.append(df)
+        all_vnames.append(name) 
+
+    return latest_df, all_dfs, all_vnames
 
 def process_df(df: pd.DataFrame) -> pd.DataFrame:
     '''
-    Process dataframe - Remove repition in model names, convert datatypes to sort by "float" instead of "str"
+    Process dataframe 
+    - Remove repition in model names 
+    - Convert datatypes to sort by "float" instead of "str" for sorting
+    - Update column names
     Args:
         df: Unprocessed Dataframe (after using update_cols)
     Returns:
@@ -66,72 +120,35 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
         else:
             models_list.append(splits[0] + "--" + splits[1])
     df[model_col_name] = models_list
+
+    # Update column names
+    update = ['Model', 'Clemscore', '% Played', 'Quality Score']
+    game_metrics = list_column_names[4:]
+
+    for col in game_metrics:
+        splits = col.split(',')
+        update.append(splits[0].capitalize() + "" + splits[1])
     
+    map_cols = {}
+    for i in range(len(update)):
+        map_cols[list_column_names[i]] = str(update[i])
+
+    df = df.rename(columns=map_cols)    
     return df
 
-def get_data(path: str, flag: bool):
-    '''
-    Get a list of all version names and respective Dataframes 
-    Args: 
-        path: Path to the directory containing CSVs of different versions -> v0.9.csv, v1.0.csv, ....
-        flag: Set this flag to include the latest version in Details and Versions tab
-    Returns: 
-        latest_df: singular list containing dataframe of the latest version of the leaderboard with only 4 columns 
-        latest_vname: list of the name of latest version 
-        previous_df: list of dataframes for previous versions (can skip latest version if required) 
-        previous_vname: list of the names for the previous versions (INCLUDED IN Details and Versions Tab)
-
-    '''
-    # Check if Directory is empty
-    list_versions = os.listdir(path)
-    if not list_versions:
-        print("Directory is empty")
-
-    else:
-        files = [file for file in list_versions if file.endswith('.csv')]
-        files.sort(reverse=True)
-        file_names = [os.path.splitext(file)[0] for file in files]
-
-        DFS = []
-        for file in files:
-            df = pd.read_csv(os.path.join(path, file))
-            df = update_cols(df) # Remove if by default there is only one header row
-            df = process_df(df) # Process Dataframe
-            df = df.sort_values(by=list(df.columns)[1], ascending=False) # Sort by clemscore
-            DFS.append(df)
-
-        # Only keep relavant columns for the main leaderboard
-        latest_df_dummy = DFS[0]
-        all_columns = list(latest_df_dummy.columns)
-        keep_columns = all_columns[0:4]
-        latest_df_dummy = latest_df_dummy.drop(columns=[c for c in all_columns if c not in keep_columns])
-
-        latest_df = [latest_df_dummy]
-        latest_vname = [file_names[0]]
-        previous_df = []
-        previous_vname = []
-        for df, name in zip(DFS, file_names):
-            previous_df.append(df)
-            previous_vname.append(name) 
-        
-        if not flag:
-            previous_df.pop(0)
-            previous_vname.pop(0)
-
-        return latest_df, latest_vname, previous_df, previous_vname
-    
-    return None
-
-
 # ['Model', 'Clemscore', 'All(Played)', 'All(Quality Score)']
-def compare_plots(df: pd.DataFrame, LIST: list):
+def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list):
     '''
     Quality Score v/s % Played plot by selecting models
     Args:
-        LIST: The list of models to show in the plot, updated from frontend
+        LIST1: The list of open source models to show in the plot, updated from frontend
+        LIST2: The list of commercial models to show in the plot, updated from frontend
     Returns:
         fig: The plot
     '''
+    # Combine lists for Open source and commercial models
+    LIST = LIST1 + LIST2
+
     short_names = label_map(LIST)
 
     list_columns = list(df.columns)
@@ -141,16 +158,12 @@ def compare_plots(df: pd.DataFrame, LIST: list):
     fig, ax = plt.subplots()
     for model in LIST:
         short = short_names[model]
-        # same_flag = short_names[model][1]
         model_df = df[df[list_columns[0]] == model]
         x = model_df[list_columns[2]]
         y = model_df[list_columns[3]]
         color = plt.cm.rainbow(x / max(X))  # Use a colormap for different colors
         plt.scatter(x, y, color=color)
-        # if same_flag:
         plt.annotate(f'{short}', (x, y), textcoords="offset points", xytext=(0, -15), ha='center', rotation=0)
-        # else:
-        #     plt.annotate(f'{short}', (x, y), textcoords="offset points", xytext=(20, -3), ha='center', rotation=0)
     ax.grid(which='both', color='grey', linewidth=1, linestyle='-', alpha=0.2)
     ax.set_xticks(np.arange(0,110,10))
     plt.xlim(-10, 110)
@@ -191,13 +204,6 @@ def label_map(model_list: list) -> dict:
     '''
     short_names = {}
     for model_name in model_list:
-        # splits = model_name.split('--')
-        # if len(splits) != 1:
-        #     splits[0] = SHORT_NAMES[splits[0] + '-']
-        #     splits[1] = SHORT_NAMES[splits[1] + '-']
-        #     # Define the short name and indicate there are two different models
-        #     short_names[model_name] = [splits[0] + '--' + splits[1], 0]
-        # else:
         if model_name in SHORT_NAMES:
             short_name = SHORT_NAMES[model_name]
         else:
@@ -236,3 +242,21 @@ def filter_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
 
     return filtered_df
     
+def split_models(MODEL_LIST: list):
+    '''
+    Split the models into open source and commercial
+    '''
+    open_models = []
+    comm_models = []
+
+    for model in MODEL_LIST:
+        if model.startswith(('gpt-', 'claude-', 'command')):
+            open_models.append(model)
+        else:
+            comm_models.append(model)
+
+    open_models.sort()
+    comm_models.sort()
+    return open_models, comm_models
+
+
