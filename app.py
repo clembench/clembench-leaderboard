@@ -1,16 +1,18 @@
 import gradio as gr
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
 from src.utils import compare_plots, filter_search, get_github_data, get_csv_data, split_models
 
 ############################ For Leaderboards #############################
-username = 'clembench'
-repo = 'clembench-runs'
+username = 'kushal-10'
+repo = 'clembench-runs-new'
 
 # Save github data locally 
 get_github_data(username, repo)
 
 # Get CSV data
+global latest_df, all_dfs, all_vnames
 latest_df, all_dfs, all_vnames = get_csv_data()
 
 global prev_df
@@ -27,8 +29,48 @@ MODEL_COLS = list(plot_df['Model'].unique())
 OPEN_MODELS, COMM_MODELS = split_models(MODEL_COLS)
 
 ########################## For Background Scheduler #######################
+# scheduler = BackgroundScheduler()
+# scheduler.start()
+
+def update_data():
+    global latest_df, all_dfs, all_vnames, ver_selection
+
+    # Always update GitHub data and CSVs
+    get_github_data(username, repo)
+    latest_df, all_dfs, all_vnames = get_csv_data()
+
+    # Update dropdown options if there's a change in available versions
+    new_versions = set(all_vnames) - set(ver_selection.choices)
+    if new_versions:
+        # Recreate the dropdown with updated choices
+        new_ver_selection = gr.Dropdown(
+            choices=list(ver_selection.choices) + list(new_versions),
+            label="Select Version 🕹️",
+            value=ver_selection.value
+        )
+        # Replace the old dropdown with the new one
+        tabs.children[2].children[0] = new_ver_selection
+
+        # Update the global reference to the new dropdown
+        ver_selection = new_ver_selection
 
 
+    # Update leaderboard tables
+    leaderboard_table.value = latest_df[0]
+    dummy_leaderboard_table.value = latest_df[0]
+
+    # Update plot data
+    global plot_df
+    plot_df = latest_df[0]
+    plot_grdf.value = plot_df
+
+    # Update previous table data
+    prev_df = select_prev_df(ver_selection.value)
+    prev_table.value = prev_df
+    dummy_prev_table.value = prev_df
+
+def restart_space():
+    
 # ############# MAIN APPLICATION ######################
 demo = gr.Blocks()
 with demo:
@@ -43,7 +85,7 @@ with demo:
                     show_label=False,
                     elem_id="search-bar",
                 )
-                        
+                                    
             leaderboard_table = gr.components.Dataframe(
                 value=latest_df[0],
                 elem_id="leaderboard-table",
@@ -65,11 +107,12 @@ with demo:
                 leaderboard_table,
                 queue=True
             )
+
         with gr.TabItem("📈 Plot", id=3):
             with gr.Row():
                 open_model_cols = gr.CheckboxGroup(
                     OPEN_MODELS, 
-                    label="Select Open Source Models 🤖", 
+                    label="Select Open Source Models 🌐", 
                     value=[],
                     elem_id="column-select",
                     interactive=True,
@@ -78,7 +121,7 @@ with demo:
             with gr.Row():
                 comm_model_cols = gr.CheckboxGroup(
                     COMM_MODELS, 
-                    label="Select Commercial Models 🤖", 
+                    label="Select Commercial Models 💼", 
                     value=[],
                     elem_id="column-select-2",
                     interactive=True,
@@ -146,7 +189,10 @@ with demo:
                 prev_table,
                 queue=True
             )
+    demo.load(update_data, every=5)
 
-    demo.load()
 demo.queue()
+
+# scheduler.add_job(update_data, 'interval', seconds=10)
+
 demo.launch()

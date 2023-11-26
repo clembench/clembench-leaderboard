@@ -1,5 +1,5 @@
 import requests
-from io import StringIO
+from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,8 +21,10 @@ def get_github_data(username: str = 'clembench', repo: str = 'clembench-runs') -
     '''
     base_url = f'https://api.github.com/repos/{username}/{repo}/contents/''?ref=main' # By default use the main branch
 
+    current_time = datetime.now()
+    print(f"Fetching Github data at {current_time} ...")
     # Add a token authorised by organization
-    token = ""
+    token = "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"
     headers = {}
     if token:
         headers['Authorization'] = f'Token {token}'
