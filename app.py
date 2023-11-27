@@ -1,25 +1,25 @@
 import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
-from src.utils import get_data, compare_plots, filter_search
+from src.utils import compare_plots, filter_search, get_csv_data, split_models
 
 ############################ For Leaderboards #############################
-DATA_PATH = 'versions'
-latest_flag = True #Set flag to iclude latest data in Details and Versions Tab
-latest_df, latest_vname, previous_df, previous_vname = get_data(DATA_PATH, latest_flag)
+# Get CSV data
+global latest_df, all_dfs, all_vnames
+latest_df, all_dfs, all_vnames = get_csv_data()
 
 global prev_df
-prev_df = previous_df[0]
+prev_df = all_dfs[0]
 def select_prev_df(name):
-    ind = previous_vname.index(name)
-    prev_df = previous_df[ind]
+    ind = all_vnames.index(name)
+    prev_df = all_dfs[ind]
     return prev_df
 
 ############################ For Plots ####################################
-global plot_df, MODEL_COLS
+global plot_df, MODEL_COLS, OPEN_MODELS, COMM_MODELS
 plot_df = latest_df[0]
 MODEL_COLS = list(plot_df['Model'].unique())
-
+OPEN_MODELS, COMM_MODELS = split_models(MODEL_COLS)
 
 ############# MAIN APPLICATION ######################
 demo = gr.Blocks()
@@ -35,7 +35,7 @@ with demo:
                     show_label=False,
                     elem_id="search-bar",
                 )
-                        
+                                    
             leaderboard_table = gr.components.Dataframe(
                 value=latest_df[0],
                 elem_id="leaderboard-table",
@@ -57,13 +57,23 @@ with demo:
                 leaderboard_table,
                 queue=True
             )
+
         with gr.TabItem("📈 Plot", id=3):
             with gr.Row():
-                model_cols = gr.CheckboxGroup(
-                    MODEL_COLS, 
-                    label="Select Models 🤖", 
+                open_model_cols = gr.CheckboxGroup(
+                    OPEN_MODELS, 
+                    label="Select Models - Open Weight 🌐", 
                     value=[],
                     elem_id="column-select",
+                    interactive=True,
+                )
+
+            with gr.Row():
+                comm_model_cols = gr.CheckboxGroup(
+                    COMM_MODELS, 
+                    label="Select Models - Closed Weight 💼", 
+                    value=[],
+                    elem_id="column-select-2",
                     interactive=True,
                 )
 
@@ -76,9 +86,16 @@ with demo:
                 # Output block for the plot
                 plot_output = gr.Plot()
 
-            model_cols.change(
+            open_model_cols.change(
                 compare_plots,
-                [plot_grdf, model_cols],
+                [plot_grdf, open_model_cols, comm_model_cols],
+                plot_output,
+                queue=True
+            )
+
+            comm_model_cols.change(
+                compare_plots,
+                [plot_grdf, open_model_cols, comm_model_cols],
                 plot_output,
                 queue=True
             )
@@ -86,7 +103,7 @@ with demo:
         with gr.TabItem("🔄 Versions and Details", elem_id="details", id=2):
             with gr.Row():
                 ver_selection = gr.Dropdown(
-                    previous_vname, label="Select Version 🕹️", value=previous_vname[0]
+                    all_vnames, label="Select Version 🕹️", value=all_vnames[0]
                 )
             with gr.Row():
                 search_bar_prev = gr.Textbox(
@@ -122,7 +139,8 @@ with demo:
                 prev_table,
                 queue=True
             )
-
     demo.load()
+
 demo.queue()
+
 demo.launch()
