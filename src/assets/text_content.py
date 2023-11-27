@@ -1,13 +1,14 @@
 TITLE = """<h1 align="center" id="space-title"> 🏆 CLEM Leaderboard</h1>"""
 
 INTRODUCTION_TEXT = """
+<h6 align="center">
 The CLEM Leaderboard aims to track, rank and evaluate current cLLMs (chat-optimized Large Language Models) with the suggested pronounciation “clems”. 
 
 The benchmarking approach is described in [Clembench: Using Game Play to Evaluate Chat-Optimized Language Models as Conversational Agents](https://arxiv.org/abs/2305.13455).
 
 Source code benchmarking "clems" is available here: [Clembench](https://github.com/clembench/clembench)
 
-All generated files and results from the benchmark runs are available here: [clembench-runs](https://github.com/clembench/clembench-runs)
+All generated files and results from the benchmark runs are available here: [clembench-runs](https://github.com/clembench/clembench-runs) </h6>
 """
 
 SHORT_NAMES = {
