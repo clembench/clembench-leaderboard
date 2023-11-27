@@ -1,29 +1,31 @@
 import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
-from src.utils import compare_plots, filter_search, get_csv_data, split_models
+from src.leaderboard_utils import filter_search, get_csv_data
+from src.plot_utils import split_models, compare_plots
 
 ############################ For Leaderboards #############################
 # Get CSV data
-global latest_df, all_dfs, all_vnames
-latest_df, all_dfs, all_vnames = get_csv_data()
+global primary_leaderboard_df, version_dfs, version_names
+primary_leaderboard_df, version_dfs, version_names = get_csv_data()
 
 global prev_df
-prev_df = all_dfs[0]
+prev_df = version_dfs[0]
 def select_prev_df(name):
-    ind = all_vnames.index(name)
-    prev_df = all_dfs[ind]
+    ind = version_names.index(name)
+    prev_df = version_dfs[ind]
     return prev_df
 
 ############################ For Plots ####################################
-global plot_df, MODEL_COLS, OPEN_MODELS, COMM_MODELS
-plot_df = latest_df[0]
-MODEL_COLS = list(plot_df['Model'].unique())
-OPEN_MODELS, COMM_MODELS = split_models(MODEL_COLS)
+global plot_df, OPEN_MODELS, CLOSED_MODELS
+plot_df = primary_leaderboard_df[0]
+MODELS = list(plot_df[list(plot_df.columns)[0]].unique())
+OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
 
-############# MAIN APPLICATION ######################
-demo = gr.Blocks()
-with demo:
+
+########################### MAIN APPLICATION ##############################
+main_app = gr.Blocks()
+with main_app:
     gr.HTML(TITLE)
     gr.Markdown(INTRODUCTION_TEXT, elem_classes="markdown-text")
 
@@ -37,15 +39,15 @@ with demo:
                 )
                                     
             leaderboard_table = gr.components.Dataframe(
-                value=latest_df[0],
+                value=primary_leaderboard_df[0],
                 elem_id="leaderboard-table",
                 interactive=False,
                 visible=True,
             )
 
-            # Add a dummy leaderboard to handle search queries from the latest_df and not update latest_df
+            # Add a dummy leaderboard to handle search queries from the primary_leaderboard_df and not update primary_leaderboard_df
             dummy_leaderboard_table = gr.components.Dataframe(
-                value=latest_df[0],
+                value=primary_leaderboard_df[0],
                 elem_id="leaderboard-table",
                 interactive=False,
                 visible=False,
@@ -70,7 +72,7 @@ with demo:
 
             with gr.Row():
                 comm_model_cols = gr.CheckboxGroup(
-                    COMM_MODELS, 
+                    CLOSED_MODELS, 
                     label="Select Models - Closed Weight 💼", 
                     value=[],
                     elem_id="column-select-2",
@@ -102,8 +104,8 @@ with demo:
 
         with gr.TabItem("🔄 Versions and Details", elem_id="details", id=2):
             with gr.Row():
-                ver_selection = gr.Dropdown(
-                    all_vnames, label="Select Version 🕹️", value=all_vnames[0]
+                version_select = gr.Dropdown(
+                    version_names, label="Select Version 🕹️", value=version_names[0]
                 )
             with gr.Row():
                 search_bar_prev = gr.Textbox(
@@ -133,14 +135,14 @@ with demo:
                 queue=True
             )
 
-            ver_selection.change(
+            version_select.change(
                 select_prev_df,
-                [ver_selection],
+                [version_select],
                 prev_table,
                 queue=True
             )
-    demo.load()
+    main_app.load()
 
-demo.queue()
+main_app.queue()
 
-demo.launch()
+main_app.launch()
