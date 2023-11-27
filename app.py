@@ -2,14 +2,43 @@ import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
 from src.utils import compare_plots, filter_search, get_csv_data, split_models, get_repo_data
+from datetime import datetime
 
-###########################################################################
+############################ Update data #################################
+# Get CSV data
+def update_data():
+    curr_time = datetime.now()
+    print(f"Updating Data at {curr_time}")
+    global latest_df, all_dfs, all_vnames
+    # latest_df, all_dfs, all_vnames = get_csv_data()
+    latest_df, all_dfs, all_vnames = get_repo_data()
+
+    global prev_df
+    prev_df = all_dfs[0]
+
+    global plot_df, MODEL_COLS, OPEN_MODELS, COMM_MODELS
+    plot_df = latest_df[0]
+    MODEL_COLS = list(plot_df['Model'].unique())
+    OPEN_MODELS, COMM_MODELS = split_models(MODEL_COLS)
+
+    leaderboard_table.update(value=latest_df[0])
+    dummy_leaderboard_table.update(value=latest_df[0])
+    # search_bar.update()
+    open_model_cols.update(value=[])
+    comm_model_cols.update(value=[])
+    plot_grdf.update(value=plot_df)
+    # plot_output.update()
+    ver_selection.update(value=all_vnames[0]) 
+    # search_bar_prev.update() 
+    prev_table.update(value=prev_df) 
+    dummy_prev_table.update(value=prev_df)
+
 
 ############################ For Leaderboards #############################
 # Get CSV data
 global latest_df, all_dfs, all_vnames
-# latest_df, all_dfs, all_vnames = get_csv_data()
-latest_df, all_dfs, all_vnames = get_repo_data()
+latest_df, all_dfs, all_vnames = get_csv_data()
+# latest_df, all_dfs, all_vnames = get_repo_data()
 
 global prev_df
 prev_df = all_dfs[0]
@@ -143,7 +172,7 @@ with demo:
                 prev_table,
                 queue=True
             )
-    demo.load()
+    demo.load(update_data, every=10)
 
 demo.queue()
 

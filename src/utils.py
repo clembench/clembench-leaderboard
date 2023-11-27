@@ -15,6 +15,7 @@ csvs_path = 'versions'
 username = 'clembench' 
 repository = 'clembench-runs'
 branch = 'main'
+github_token = os.getenv('GITHUB_TOKEN')
 
 def get_repo_data():
     '''
@@ -27,7 +28,9 @@ def get_repo_data():
         all_vnames: list of the names for the previous versions + latest version (For Details and Versions Tab Dropdown)
     '''
     repo_url = f'https://api.github.com/repos/{username}/{repository}/contents/'
-    response = requests.get(repo_url)
+    headers = {'Authorization': f'token {github_token}'}
+    print(headers)
+    response = requests.get(repo_url, headers=headers)
 
     data_dict = {}
     # Check if the request was successful
@@ -47,7 +50,7 @@ def get_repo_data():
                 print(f'Error status_code : {file_response.status_code}')
     else:
         print('Failed to retrieve folder information from the repository')
-        print(f'Error status_code: {response.status_code} for folder: {folder}')
+        print(f'Error status_code: {response.status_code}')
 
     if data_dict:
         vers_list = list(data_dict.keys())
