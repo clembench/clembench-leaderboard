@@ -182,6 +182,7 @@ def filter_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
     models_list = list(df[list_cols[0]])
     for q in queries:
         q = q.lower()
+        q = q.strip()
         for i in range(df_len):
             model_name = models_list[i]
             if q in model_name.lower():
@@ -196,22 +197,18 @@ def filter_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
 
 ###################################FOR PLOTS##################################################
 
-# ['Model', 'Clemscore', 'All(Played)', 'All(Quality Score)']
-def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list):
+def plot_graph(df:pd.DataFrame, LIST:list):
     '''
-    Quality Score v/s % Played plot by selecting models
+    Takes in a list of models to plot
     Args:
-        LIST1: The list of open source models to show in the plot, updated from frontend
-        LIST2: The list of commercial models to show in the plot, updated from frontend
+        df: A dummy dataframe of latest version
+        LIST: List of models to plot
     Returns:
-        fig: The plot
+        Fig: figure to plot
     '''
-    # Combine lists for Open source and commercial models
-    LIST = LIST1 + LIST2
-
     short_names = label_map(LIST)
-
     list_columns = list(df.columns)
+    
     df = df[df[list_columns[0]].isin(LIST)]
 
     X = df[list_columns[2]]
@@ -235,6 +232,53 @@ def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list):
 
     return fig
 
+
+
+# ['Model', 'Clemscore', 'All(Played)', 'All(Quality Score)']
+def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list):
+    '''
+    Quality Score v/s % Played plot by selecting models
+    Args:
+        df: A dummy dataframe of latest version
+        LIST1: The list of open source models to show in the plot, updated from frontend
+        LIST2: The list of commercial models to show in the plot, updated from frontend
+    Returns:
+        fig: The plot
+    '''
+    # Combine lists for Open source and commercial models
+    LIST = LIST1 + LIST2
+    fig = plot_graph(df, LIST)
+    return fig
+
+def plot_all(df:pd.DataFrame):
+    '''
+    Quality Score v/s % Played plot for all models
+    Args:
+        df: A dummy dataframe of latest version
+    Returns:
+        fig: The plot of all models
+    '''
+
+    list_columns = list(df.columns)
+    LIST = list(df[list_columns[0]])
+    fig = plot_graph(df, LIST)
+
+    return fig
+
+def plot_none(df:pd.DataFrame):
+    '''
+    Quality Score v/s % Played empty plot
+    Args:
+        df: A dummy dataframe of latest version
+    Returns:
+        fig: The empty plot
+    '''
+    LIST = []
+    fig = plot_graph(df, LIST)
+
+    return fig
+
+    
 def shorten_model_name(full_name):
     # Split the name into parts
     parts = full_name.split('-')
@@ -290,5 +334,7 @@ def split_models(MODEL_LIST: list):
     open_models.sort()
     comm_models.sort()
     return open_models, comm_models
+
+
 
 

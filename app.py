@@ -1,11 +1,10 @@
 import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
-from src.utils import compare_plots, filter_search, get_csv_data, split_models, get_repo_data
+from src.utils import compare_plots, filter_search, get_csv_data, split_models, get_repo_data, plot_all, plot_none
 from datetime import datetime
 
 ############################ Update data #################################
-# Get CSV data
 def update_data():
     curr_time = datetime.now()
     print(f"Updating Data at {curr_time}")
@@ -109,6 +108,12 @@ with demo:
                     elem_id="column-select-2",
                     interactive=True,
                 )
+            
+            with gr.Row():
+                with gr.Column():
+                    all_btn = gr.Button(value="Toggle All")
+                with gr.Column():
+                    clr_btn = gr.Button(value="Toggle None")
 
             with gr.Row():
                 plot_grdf = gr.DataFrame(
@@ -118,6 +123,10 @@ with demo:
             with gr.Row():
                 # Output block for the plot
                 plot_output = gr.Plot()
+
+            
+            all_btn.click(fn=plot_all, inputs=leaderboard_table, outputs=[plot_output])
+            clr_btn.click(fn=plot_none, inputs=leaderboard_table, outputs=[plot_output])
 
             open_model_cols.change(
                 compare_plots,
@@ -172,7 +181,7 @@ with demo:
                 prev_table,
                 queue=True
             )
-    demo.load(update_data, every=10)
+    demo.load()
 
 demo.queue()
 
