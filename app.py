@@ -1,12 +1,15 @@
 import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
-from src.utils import compare_plots, filter_search, get_csv_data, split_models
+from src.utils import compare_plots, filter_search, get_csv_data, split_models, get_repo_data
+
+###########################################################################
 
 ############################ For Leaderboards #############################
 # Get CSV data
 global latest_df, all_dfs, all_vnames
-latest_df, all_dfs, all_vnames = get_csv_data()
+# latest_df, all_dfs, all_vnames = get_csv_data()
+latest_df, all_dfs, all_vnames = get_repo_data()
 
 global prev_df
 prev_df = all_dfs[0]

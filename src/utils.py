@@ -2,12 +2,80 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import requests
+from io import StringIO
+import base64
 
 from src.assets.text_content import SHORT_NAMES
 
 # Set the folder name to save csv files
 global csvs_path
 csvs_path = 'versions'
+
+username = 'clembench' 
+repository = 'clembench-runs'
+branch = 'main'
+
+def get_repo_data():
+    '''
+    Get data from csv files from github repo
+    Args:
+        None
+    Returns: 
+        latest_df: singular list containing dataframe of the latest version of the leaderboard with only 4 columns 
+        all_dfs: list of dataframes for previous versions + latest version including columns for all games
+        all_vnames: list of the names for the previous versions + latest version (For Details and Versions Tab Dropdown)
+    '''
+    repo_url = f'https://api.github.com/repos/{username}/{repository}/contents/'
+    response = requests.get(repo_url)
+
+    data_dict = {}
+    # Check if the request was successful
+    if response.status_code == 200:
+        folders = [item['name'] for item in response.json() if item['type'] == 'dir']
+        for folder in folders:
+            
+            url = f'https://api.github.com/repos/{username}/{repository}/contents/{folder}/results.csv?ref={branch}'
+            file_response = requests.get(url)
+            
+            # Check if the request was successful for each file
+            if file_response.status_code == 200:
+                content = file_response.json()['content']
+                df = pd.read_csv(StringIO(base64.b64decode(content).decode('utf-8')))
+                data_dict[str(folder)] = df
+            else:
+                print(f'Error status_code : {file_response.status_code}')
+    else:
+        print('Failed to retrieve folder information from the repository')
+        print(f'Error status_code: {response.status_code} for folder: {folder}')
+
+    if data_dict:
+        vers_list = list(data_dict.keys())
+        float_content = [float(s[1:]) for s in vers_list]
+        float_content.sort(reverse=True)
+        vers_list = ['v'+str(s) for s in float_content]
+
+        DFS = []
+        for key in vers_list:
+            df = data_dict[key]
+            df = process_df(df)
+            df = df.sort_values(by=list(df.columns)[1], ascending=False) # Sort by clemscore
+            DFS.append(df)
+
+        # Only keep relavant columns for the main leaderboard
+        latest_df_dummy = DFS[0]
+        all_columns = list(latest_df_dummy.columns)
+        keep_columns = all_columns[0:4]
+        latest_df_dummy = latest_df_dummy.drop(columns=[c for c in all_columns if c not in keep_columns])
+
+        latest_df = [latest_df_dummy]
+        all_dfs = []
+        all_vnames = []
+        for df, name in zip(DFS, vers_list):
+            all_dfs.append(df)
+            all_vnames.append(name) 
+
+        return latest_df, all_dfs, all_vnames
 
 def get_csv_data():
     '''
@@ -95,6 +163,36 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
     df = df.rename(columns=map_cols)    
     return df
 
+def filter_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
+    '''
+    Filter the dataframe based on the search query
+    Args:
+        df: Unfiltered dataframe
+        query: a string of queries separated by ";"
+    Return:
+        filtered_df: Dataframe containing searched queries in the 'Model' column 
+    '''
+    queries = query.split(';')
+    list_cols = list(df.columns)
+    df_len = len(df)
+    filtered_models = []
+    models_list = list(df[list_cols[0]])
+    for q in queries:
+        q = q.lower()
+        for i in range(df_len):
+            model_name = models_list[i]
+            if q in model_name.lower():
+                filtered_models.append(model_name) # Append model names containing query q
+
+    filtered_df = df[df[list_cols[0]].isin(filtered_models)]
+
+    if query == "":
+        return df
+
+    return filtered_df
+
+###################################FOR PLOTS##################################################
+
 # ['Model', 'Clemscore', 'All(Played)', 'All(Quality Score)']
 def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list):
     '''
@@ -172,34 +270,6 @@ def label_map(model_list: list) -> dict:
         short_names[model_name] = short_name
 
     return short_names
-
-def filter_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
-    '''
-    Filter the dataframe based on the search query
-    Args:
-        df: Unfiltered dataframe
-        query: a string of queries separated by ";"
-    Return:
-        filtered_df: Dataframe containing searched queries in the 'Model' column 
-    '''
-    queries = query.split(';')
-    list_cols = list(df.columns)
-    df_len = len(df)
-    filtered_models = []
-    models_list = list(df[list_cols[0]])
-    for q in queries:
-        q = q.lower()
-        for i in range(df_len):
-            model_name = models_list[i]
-            if q in model_name.lower():
-                filtered_models.append(model_name) # Append model names containing query q
-
-    filtered_df = df[df[list_cols[0]].isin(filtered_models)]
-
-    if query == "":
-        return df
-
-    return filtered_df
     
 def split_models(MODEL_LIST: list):
     '''
