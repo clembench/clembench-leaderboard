@@ -62,7 +62,7 @@ with main_app:
 
         with gr.TabItem("📈 Plot", id=3):
             with gr.Row():
-                open_model_cols = gr.CheckboxGroup(
+                open_models_selection = gr.CheckboxGroup(
                     OPEN_MODELS, 
                     label="Select Models - Open Weight 🌐", 
                     value=[],
@@ -71,7 +71,7 @@ with main_app:
                 )
 
             with gr.Row():
-                comm_model_cols = gr.CheckboxGroup(
+                closed_models_selection = gr.CheckboxGroup(
                     CLOSED_MODELS, 
                     label="Select Models - Closed Weight 💼", 
                     value=[],
@@ -80,7 +80,7 @@ with main_app:
                 )
 
             with gr.Row():
-                plot_grdf = gr.DataFrame(
+                dummy_plot_df = gr.DataFrame(
                     value=plot_df,
                     visible=False
                 )
@@ -88,16 +88,16 @@ with main_app:
                 # Output block for the plot
                 plot_output = gr.Plot()
 
-            open_model_cols.change(
+            open_models_selection.change(
                 compare_plots,
-                [plot_grdf, open_model_cols, comm_model_cols],
+                [dummy_plot_df, open_models_selection, closed_models_selection],
                 plot_output,
                 queue=True
             )
 
-            comm_model_cols.change(
+            closed_models_selection.change(
                 compare_plots,
-                [plot_grdf, open_model_cols, comm_model_cols],
+                [dummy_plot_df, open_models_selection, closed_models_selection],
                 plot_output,
                 queue=True
             )

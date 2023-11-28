@@ -1,17 +1,46 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
 
 from src.assets.text_content import SHORT_NAMES
 
-def plot_graph(df:pd.DataFrame, LIST:list):
+def plotly_plot(df:pd.DataFrame, LIST:list):
     '''
-    Takes in a list of models to plot
+    Takes in a list of models for a plotly plot
     Args:
         df: A dummy dataframe of latest version
         LIST: List of models to plot
     Returns:
-        Fig: figure to plot
+        Fig: plotly figure
+    '''
+    short_names = label_map(LIST)
+    list_columns = list(df.columns)
+
+    # Filter dataframe based on the provided list of models
+    df = df[df[list_columns[0]].isin(LIST)]
+
+    fig = px.scatter(df, x=list_columns[2], y=list_columns[3], color=list_columns[0], symbol=list_columns[0],
+                 color_discrete_map={"category1": "blue", "category2": "red"},
+                 hover_name=list_columns[0])
+    
+    fig.update_layout(
+        xaxis_title='% Played',
+        yaxis_title='Quality Score',
+        title='Overview of benchmark results',
+    )
+
+    return fig
+
+def matplotlib_plot(df:pd.DataFrame, LIST:list):
+    '''
+    Takes in a list of models for a matplotlib plot
+    Args:
+        df: A dummy dataframe of latest version
+        LIST: List of models to plot
+    Returns:
+        Fig: matplotlib figure
     '''
     short_names = label_map(LIST)
     list_columns = list(df.columns)
@@ -53,7 +82,7 @@ def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list):
     '''
     # Combine lists for Open source and commercial models
     LIST = LIST1 + LIST2
-    fig = plot_graph(df, LIST)
+    fig = plotly_plot(df, LIST)
     return fig
     
 def shorten_model_name(full_name):
