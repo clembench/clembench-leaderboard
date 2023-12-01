@@ -17,7 +17,7 @@ def select_prev_df(name):
     return prev_df
 
 # For Plots 
-global plot_df, OPEN_MODELS, CLOSED_MODELS
+global plot_df, OPEN_MODELS, CLOSED_MODELS, SHOW_ALL, SHOW_NAMES
 plot_df = primary_leaderboard_df[0]
 MODELS = list(plot_df[list(plot_df.columns)[0]].unique())
 OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
@@ -66,7 +66,7 @@ with main_app:
                     OPEN_MODELS, 
                     label="Select Models - Open Weight 🌐", 
                     value=[],
-                    elem_id="column-select",
+                    elem_id="value-select",
                     interactive=True,
                 )
 
@@ -75,15 +75,35 @@ with main_app:
                     CLOSED_MODELS, 
                     label="Select Models - Closed Weight 💼", 
                     value=[],
-                    elem_id="column-select-2",
+                    elem_id="value-select-2",
                     interactive=True,
                 )
+            
+            with gr.Row():
+                with gr.Column():
+                    show_all = gr.CheckboxGroup(
+                        ["Show All Models"],
+                        label="Toggle view: Show plot for all models 🤖",
+                        value=[],
+                        elem_id="value-select-3",
+                        interactive=True,
+                    )
+                
+                with gr.Column():
+                    show_names = gr.CheckboxGroup(
+                        ["Show Names"],
+                        label ="Toggle view: Show names of models on the plot 🏷️",
+                        value=[],
+                        elem_id="value-select-4",
+                        interactive=True,
+                    ) 
 
             with gr.Row():
                 dummy_plot_df = gr.DataFrame(
                     value=plot_df,
                     visible=False
                 )
+
             with gr.Row():
                 with gr.Column():
                     # Output block for the plot
@@ -91,14 +111,28 @@ with main_app:
 
             open_models_selection.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names],
                 plot_output,
                 queue=True
             )
 
             closed_models_selection.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names],
+                plot_output,
+                queue=True
+            )
+            
+            show_all.change(
+                compare_plots,
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names],
+                plot_output,
+                queue=True
+            )
+
+            show_names.change(
+                compare_plots,
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names],
                 plot_output,
                 queue=True
             )
