@@ -1,13 +1,13 @@
 import gradio as gr
 
 from src.assets.text_content import TITLE, INTRODUCTION_TEXT
-from src.leaderboard_utils import filter_search, get_csv_data
+from src.leaderboard_utils import filter_search, get_github_data
 from src.plot_utils import split_models, compare_plots
 
 # For Leaderboards
 # Get CSV data
 global primary_leaderboard_df, version_dfs, version_names
-primary_leaderboard_df, version_dfs, version_names = get_csv_data()
+primary_leaderboard_df, version_dfs, version_names = get_github_data()
 
 global prev_df
 prev_df = version_dfs[0]
