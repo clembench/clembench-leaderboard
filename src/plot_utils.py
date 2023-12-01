@@ -15,16 +15,18 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list):
         Fig: plotly figure
     '''
     
-    if ALL:
-        LIST = list(df[list(df.columns)[0]].unique())
-
+    # Get list of all models and append short names column to df
     list_columns = list(df.columns)
-
-    # Filter dataframe based on the provided list of models
-    df = df[df[list_columns[0]].isin(LIST)]
-    short_names = label_map(LIST)
+    ALL_LIST = list(df[list_columns[0]].unique())
+    short_names = label_map(ALL_LIST)
     list_short_names = list(short_names.values())
     df["Short"] = list_short_names
+
+    if ALL:
+        LIST = ALL_LIST
+    # Filter dataframe based on the provided list of models
+    df = df[df[list_columns[0]].isin(LIST)]
+    
 
     if NAMES:
         fig = px.scatter(df, x=list_columns[2], y=list_columns[3], color=list_columns[0], symbol=list_columns[0],
