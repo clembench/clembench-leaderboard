@@ -15,21 +15,26 @@ def plotly_plot(df:pd.DataFrame, LIST:list):
     Returns:
         Fig: plotly figure
     '''
+    
     short_names = label_map(LIST)
     list_columns = list(df.columns)
 
     # Filter dataframe based on the provided list of models
     df = df[df[list_columns[0]].isin(LIST)]
 
+
     fig = px.scatter(df, x=list_columns[2], y=list_columns[3], color=list_columns[0], symbol=list_columns[0],
                  color_discrete_map={"category1": "blue", "category2": "red"},
-                 hover_name=list_columns[0])
-    
+                 hover_name=list_columns[0], template="plotly_white")
+        
     fig.update_layout(
         xaxis_title='% Played',
         yaxis_title='Quality Score',
         title='Overview of benchmark results',
     )
+
+    fig.update_xaxes(range=[-10, 110])
+    fig.update_yaxes(range=[-10, 110])
 
     return fig
 

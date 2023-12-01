@@ -4,7 +4,7 @@ from src.assets.text_content import TITLE, INTRODUCTION_TEXT
 from src.leaderboard_utils import filter_search, get_csv_data
 from src.plot_utils import split_models, compare_plots
 
-############################ For Leaderboards #############################
+# For Leaderboards
 # Get CSV data
 global primary_leaderboard_df, version_dfs, version_names
 primary_leaderboard_df, version_dfs, version_names = get_csv_data()
@@ -16,14 +16,14 @@ def select_prev_df(name):
     prev_df = version_dfs[ind]
     return prev_df
 
-############################ For Plots ####################################
+# For Plots 
 global plot_df, OPEN_MODELS, CLOSED_MODELS
 plot_df = primary_leaderboard_df[0]
 MODELS = list(plot_df[list(plot_df.columns)[0]].unique())
 OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
 
 
-########################### MAIN APPLICATION ##############################
+# MAIN APPLICATION s
 main_app = gr.Blocks()
 with main_app:
     gr.HTML(TITLE)
@@ -85,8 +85,9 @@ with main_app:
                     visible=False
                 )
             with gr.Row():
-                # Output block for the plot
-                plot_output = gr.Plot()
+                with gr.Column():
+                    # Output block for the plot
+                    plot_output = gr.Plot()
 
             open_models_selection.change(
                 compare_plots,
