@@ -1,50 +1,65 @@
 import os
 import pandas as pd
+import requests, json
+from io import StringIO
 
-# Set the folder name to save csv files
-global csvs_path
-csvs_path = 'versions'
-
-def get_csv_data():
+def get_github_data():
     '''
-    Get data from csv files saved locally
+    Get data from csv files on Github
     Args:
-        None
+        None    
     Returns: 
         latest_df: singular list containing dataframe of the latest version of the leaderboard with only 4 columns 
         all_dfs: list of dataframes for previous versions + latest version including columns for all games
         all_vnames: list of the names for the previous versions + latest version (For Details and Versions Tab Dropdown)
     '''
-    versions_list = os.listdir(csvs_path)
-    versions_list = [s for s in versions_list if s.startswith('v') and s.endswith('.csv')]
-    versions_list = [s.split('.csv')[0] for s in versions_list]
-    # Sort by latest version
-    float_content = [float(s[1:]) for s in versions_list]
-    float_content.sort(reverse=True)
-    versions_list = ['v'+str(s) for s in float_content]
+    uname = "clembench"
+    repo = "clembench-runs"
+    json_url = f"https://raw.githubusercontent.com/{uname}/{repo}/main/benchmark_runs.json"
+    resp = requests.get(json_url)
+    if resp.status_code == 200:
+        json_data = json.loads(resp.text)
+        versions = json_data['versions']
+        version_names = []
+        csv_url = f"https://raw.githubusercontent.com/{uname}/{repo}/main/"
+        for ver in versions:
+            version_names.append(ver['version'])
+            csv_path = ver['result_file'].split('/')[1:]
+            csv_path = '/'.join(csv_path)
+        
+        #Sort by latest version
+        float_content = [float(s[1:]) for s in version_names]
+        float_content.sort(reverse=True)
+        version_names = ['v'+str(s) for s in float_content]
 
-    DFS = []
-    for csv in versions_list:
-        read_path = os.path.join(csvs_path, csv + '.csv')
-        df = pd.read_csv(read_path)
-        df = process_df(df)
-        df = df.sort_values(by=list(df.columns)[1], ascending=False) # Sort by clemscore
-        DFS.append(df)
+        DFS = []
+        for version in version_names:
+            result_url = csv_url+ version + '/' + csv_path
+            csv_response = requests.get(result_url)
+            if csv_response.status_code == 200:
+                df = pd.read_csv(StringIO(csv_response.text))
+                df = process_df(df)
+                df = df.sort_values(by=list(df.columns)[1], ascending=False) # Sort by clemscore
+                DFS.append(df)
+            else:
+                print(f"Failed to read CSV file for version : {version}. Status Code : {resp.status_code}")
 
-    # Only keep relavant columns for the main leaderboard
-    latest_df_dummy = DFS[0]
-    all_columns = list(latest_df_dummy.columns)
-    keep_columns = all_columns[0:4]
-    latest_df_dummy = latest_df_dummy.drop(columns=[c for c in all_columns if c not in keep_columns])
+        # Only keep relavant columns for the main leaderboard
+        latest_df_dummy = DFS[0]
+        all_columns = list(latest_df_dummy.columns)
+        keep_columns = all_columns[0:4]
+        latest_df_dummy = latest_df_dummy.drop(columns=[c for c in all_columns if c not in keep_columns])
 
-    latest_df = [latest_df_dummy]
-    all_dfs = []
-    all_vnames = []
-    for df, name in zip(DFS, versions_list):
-        all_dfs.append(df)
-        all_vnames.append(name) 
-
-    return latest_df, all_dfs, all_vnames
+        latest_df = [latest_df_dummy]
+        all_dfs = []
+        all_vnames = []
+        for df, name in zip(DFS, version_names):
+            all_dfs.append(df)
+            all_vnames.append(name) 
+        return latest_df, all_dfs, all_vnames
+    
+    else:
+        print(f"Failed to read JSON file: Status Code : {resp.status_code}")
 
 def process_df(df: pd.DataFrame) -> pd.DataFrame:
     '''
