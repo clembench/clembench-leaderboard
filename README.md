@@ -13,12 +13,21 @@ pinned: false
 
 
 ```
-@misc{chalamalasetti2023clembench,
-      title={Clembench: Using Game Play to Evaluate Chat-Optimized Language Models as Conversational Agents}, 
-      author={Kranti Chalamalasetti and Jana Götze and Sherzod Hakimov and Brielen Madureira and Philipp Sadler and David Schlangen},
-      year={2023},
-      eprint={2305.13455},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
+@inproceedings{chalamalasetti-etal-2023-clembench,
+    title = "clembench: Using Game Play to Evaluate Chat-Optimized Language Models as Conversational Agents",
+    author = {Chalamalasetti, Kranti  and
+      G{\"o}tze, Jana  and
+      Hakimov, Sherzod  and
+      Madureira, Brielen  and
+      Sadler, Philipp  and
+      Schlangen, David},
+      booktitle = "Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing",
+      month = dec,
+      year = "2023",
+      address = "Singapore",
+      publisher = "Association for Computational Linguistics",
+      url = "https://aclanthology.org/2023.emnlp-main.689",
+      pages = "11174--11219"
 }
+
 ```

@@ -64,7 +64,7 @@ with main_app:
             with gr.Row():
                 open_models_selection = gr.CheckboxGroup(
                     OPEN_MODELS, 
-                    label="Select Models - Open Weight 🌐", 
+                    label="Open-weight Models 🌐",
                     value=[],
                     elem_id="value-select",
                     interactive=True,
@@ -73,7 +73,7 @@ with main_app:
             with gr.Row():
                 closed_models_selection = gr.CheckboxGroup(
                     CLOSED_MODELS, 
-                    label="Select Models - Closed Weight 💼", 
+                    label="Closed-weight Models 💼",
                     value=[],
                     elem_id="value-select-2",
                     interactive=True,
@@ -82,8 +82,8 @@ with main_app:
             with gr.Row():
                 with gr.Column():
                     show_all = gr.CheckboxGroup(
-                        ["Show All Models"],
-                        label="Toggle view: Show plot for all models 🤖",
+                        ["Select All Models"],
+                        label="Show plot for all models 🤖",
                         value=[],
                         elem_id="value-select-3",
                         interactive=True,
@@ -92,7 +92,7 @@ with main_app:
                 with gr.Column():
                     show_names = gr.CheckboxGroup(
                         ["Show Names"],
-                        label ="Toggle view: Show names of models on the plot 🏷️",
+                        label ="Show names of models on the plot 🏷️",
                         value=[],
                         elem_id="value-select-4",
                         interactive=True,
