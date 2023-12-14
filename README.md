@@ -9,7 +9,7 @@ app_file: app.py
 pinned: false
 ---
 
-["clembench: A Framework for the Systematic Evaluation of Chat-Optimized Language Models as Conversational Agents"](https://arxiv.org/abs/2305.13455)
+["clembench: A Framework for the Systematic Evaluation of Chat-Optimized Language Models as Conversational Agents"](https://aclanthology.org/2023.emnlp-main.689/)
 
 
 ```
