@@ -42,8 +42,7 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list):
         xaxis_title='% Played',
         yaxis_title='Quality Score',
         title='Overview of benchmark results',
-        height=1000,
-        width=1500
+        height=1000
     )
 
     fig.update_xaxes(range=[-5, 105])
