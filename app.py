@@ -17,7 +17,7 @@ def select_prev_df(name):
     return prev_df
 
 # For Plots 
-global plot_df, OPEN_MODELS, CLOSED_MODELS, SHOW_ALL, SHOW_NAMES
+global plot_df, OPEN_MODELS, CLOSED_MODELS
 plot_df = primary_leaderboard_df[0]
 MODELS = list(plot_df[list(plot_df.columns)[0]].unique())
 OPEN_MODELS, CLOSED_MODELS = split_models(MODELS)
