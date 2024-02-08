@@ -98,6 +98,15 @@ with main_app:
                         interactive=True,
                     ) 
 
+                with gr.Column():
+                    show_legend = gr.CheckboxGroup(
+                        ["Show Legend"],
+                        label ="Show legend on the plot 💡",
+                        value=[],
+                        elem_id="value-select-5",
+                        interactive=True,
+                    ) 
+
             with gr.Row():
                 dummy_plot_df = gr.DataFrame(
                     value=plot_df,
@@ -111,28 +120,35 @@ with main_app:
 
             open_models_selection.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
                 plot_output,
                 queue=True
             )
 
             closed_models_selection.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
                 plot_output,
                 queue=True
             )
             
             show_all.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
                 plot_output,
                 queue=True
             )
 
             show_names.change(
                 compare_plots,
-                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names],
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
+                plot_output,
+                queue=True
+            )
+
+            show_legend.change(
+                compare_plots,
+                [dummy_plot_df, open_models_selection, closed_models_selection, show_all, show_names, show_legend],
                 plot_output,
                 queue=True
             )
