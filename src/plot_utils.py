@@ -3,7 +3,7 @@ import plotly.express as px
 
 from src.assets.text_content import SHORT_NAMES
 
-def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list):
+def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list):
     '''
     Takes in a list of models for a plotly plot
     Args:
@@ -11,6 +11,7 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list):
         LIST: List of models to plot
         ALL: Either [] or ["Show All Models"] - toggle view to plot all models 
         NAMES: Either [] or ["Show Names"] - toggle view to show model names on plot 
+        LEGEND: Either [] or ["Show Legend"] - toggle view to show legend on plot
     Returns:
         Fig: plotly figure
     '''
@@ -38,6 +39,9 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list):
                     color_discrete_map={"category1": "blue", "category2": "red"},
                     hover_name=list_columns[0], template="plotly_white")
         
+    if not LEGEND:
+        fig.update_layout(showlegend=False)
+        
     fig.update_layout(
         xaxis_title='% Played',
         yaxis_title='Quality Score',
@@ -52,7 +56,7 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list):
 
 
 # ['Model', 'Clemscore', 'All(Played)', 'All(Quality Score)']
-def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list, ALL:list, NAMES:list):
+def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list, ALL:list, NAMES:list, LEGEND: list):
     '''
     Quality Score v/s % Played plot by selecting models
     Args:
@@ -60,14 +64,15 @@ def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list, ALL:list, NAMES:li
         LIST1: The list of open source models to show in the plot, updated from frontend
         LIST2: The list of commercial models to show in the plot, updated from frontend
         ALL: Either [] or ["Show All Models"] - toggle view to plot all models 
-        NAMES: Either [] or ["Show Names"] - toggle view to show model names on plot 
+        NAMES: Either [] or ["Show Names"] - toggle view to show model names on plot
+        LEGEND: Either [] or ["Show Legend"] - toggle view to show legend on plot 
     Returns:
         fig: The plot
     '''
 
     # Combine lists for Open source and commercial models
     LIST = LIST1 + LIST2
-    fig = plotly_plot(df, LIST, ALL, NAMES)
+    fig = plotly_plot(df, LIST, ALL, NAMES, LEGEND)
 
     return fig
     
