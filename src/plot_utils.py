@@ -3,7 +3,7 @@ import plotly.express as px
 
 from src.assets.text_content import SHORT_NAMES
 
-def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list):
+def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list, MOBILE:list ):
     '''
     Takes in a list of models for a plotly plot
     Args:
@@ -12,6 +12,7 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list):
         ALL: Either [] or ["Show All Models"] - toggle view to plot all models 
         NAMES: Either [] or ["Show Names"] - toggle view to show model names on plot 
         LEGEND: Either [] or ["Show Legend"] - toggle view to show legend on plot
+        MOBILE: Either [] or ["Mobile View"] - toggle view to for smaller screens
     Returns:
         Fig: plotly figure
     '''
@@ -52,11 +53,30 @@ def plotly_plot(df:pd.DataFrame, LIST:list, ALL:list, NAMES:list, LEGEND:list):
     fig.update_xaxes(range=[-5, 105])
     fig.update_yaxes(range=[-5, 105])
 
+    if MOBILE:
+        fig.update_layout(height=300)
+
+
+    if MOBILE and LEGEND:
+        fig.update_layout(height=450)
+        fig.update_layout(legend=dict(
+            yanchor="bottom",
+            y=-5.52,
+            xanchor="left",
+            x=0.01
+        ))
+
+        fig.update_layout(
+            xaxis_title="",
+            yaxis_title="",
+            title="% Played v/s Quality Score"
+        )
+
     return fig
 
 
 # ['Model', 'Clemscore', 'All(Played)', 'All(Quality Score)']
-def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list, ALL:list, NAMES:list, LEGEND: list):
+def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list, ALL:list, NAMES:list, LEGEND: list, MOBILE: list):
     '''
     Quality Score v/s % Played plot by selecting models
     Args:
@@ -66,13 +86,14 @@ def compare_plots(df: pd.DataFrame, LIST1: list, LIST2: list, ALL:list, NAMES:li
         ALL: Either [] or ["Show All Models"] - toggle view to plot all models 
         NAMES: Either [] or ["Show Names"] - toggle view to show model names on plot
         LEGEND: Either [] or ["Show Legend"] - toggle view to show legend on plot 
+        MOBILE: Either [] or ["Mobile View"] - toggle view to for smaller screens
     Returns:
         fig: The plot
     '''
 
     # Combine lists for Open source and commercial models
     LIST = LIST1 + LIST2
-    fig = plotly_plot(df, LIST, ALL, NAMES, LEGEND)
+    fig = plotly_plot(df, LIST, ALL, NAMES, LEGEND, MOBILE)
 
     return fig
     

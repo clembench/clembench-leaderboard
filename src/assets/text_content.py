@@ -4,11 +4,15 @@ INTRODUCTION_TEXT = """
 <h6 align="center">
 The CLEM Leaderboard aims to track, rank and evaluate current cLLMs (chat-optimized Large Language Models) with the suggested pronounciation “clems”. 
 
-The benchmarking approach is described in [Clembench: Using Game Play to Evaluate Chat-Optimized Language Models as Conversational Agents](https://arxiv.org/abs/2305.13455).
+The benchmarking approach is described in [Clembench: Using Game Play to Evaluate Chat-Optimized Language Models as Conversational Agents](https://aclanthology.org/2023.emnlp-main.689.pdf).
 
 Source code for benchmarking "clems" is available here: [Clembench](https://github.com/clembench/clembench)
 
 All generated files and results from the benchmark runs are available here: [clembench-runs](https://github.com/clembench/clembench-runs) </h6>
+"""
+
+CLEMSCORE_TEXT = """
+The <i>clemscore</i> combines a score representing the overall ability to just follow the game instructions (separately scored in field <i>Played</i>) and the quality of the play in attempt where instructions were followed (field <i>Quality Scores</i>). For details about the games / interaction settings, and for results on older versions of the benchmark, see the tab <i>Versions and Details</i>.
 """
 
 SHORT_NAMES = {
