@@ -8,7 +8,7 @@ from src.plot_utils import split_models, compare_plots
 dataframe_height = 800 # Height of the table in pixels
 # Get CSV data
 global primary_leaderboard_df, version_dfs, version_names
-primary_leaderboard_df, version_dfs, version_names = get_github_data()
+primary_leaderboard_df, version_dfs, version_names, date = get_github_data()
 
 global prev_df
 prev_df = version_dfs[0]
@@ -48,6 +48,7 @@ with main_app:
             )
 
             gr.HTML(CLEMSCORE_TEXT)
+            gr.HTML(f"Last updated - {date}")
 
             # Add a dummy leaderboard to handle search queries from the primary_leaderboard_df and not update primary_leaderboard_df
             dummy_leaderboard_table = gr.Dataframe(
