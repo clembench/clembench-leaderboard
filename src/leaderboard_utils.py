@@ -1,148 +1,139 @@
 import os
 import pandas as pd
-import requests, json
+import requests
+import json
 from io import StringIO
 from datetime import datetime
 
+from src.assets.text_content import REPO
 
 def get_github_data():
     """
-    Get data from csv files on Github
-    Args:
-        None
+    Read and process data from CSV files hosted on GitHub. - https://github.com/clembench/clembench-runs
+
     Returns:
-        latest_df: singular list containing dataframe of the latest version of the leaderboard with only 4 columns
-        all_dfs: list of dataframes for previous versions + latest version including columns for all games
-        all_vnames: list of the names for the previous versions + latest version (For Details and Versions Tab Dropdown)
+        github_data (dict): Dictionary containing:
+            - "text": List of DataFrames for each version's textual leaderboard data.
+            - "multimodal": List of DataFrames for each version's multimodal leaderboard data.
+            - "date": Formatted date of the latest version in "DD Month YYYY" format.
     """
-    uname = "clembench"
-    repo = "clembench-runs"
-    json_url = f"https://raw.githubusercontent.com/{uname}/{repo}/main/benchmark_runs.json"
-    resp = requests.get(json_url)
-    if resp.status_code == 200:
-        json_data = json.loads(resp.text)
-        versions = json_data['versions']
-        version_names = []
-        csv_url = f"https://raw.githubusercontent.com/{uname}/{repo}/main/"
-        for ver in versions:
-            version_names.append(ver['version'])
-            csv_path = ver['result_file'].split('/')[1:]
-            csv_path = '/'.join(csv_path)
-        
-        # Sort by latest version
-        float_content = [float(s[1:]) for s in version_names]
-        float_content.sort(reverse=True)
-        version_names = ['v'+str(s) for s in float_content]
+    base_repo = REPO
+    json_url = base_repo + "benchmark_runs.json"
+    response = requests.get(json_url)
 
-        # Get date of latest version
-        for data in versions:
-            if data['version'] == version_names[0]:
-                date = data['date'] # Should be in YYYY/MM/DD format
-                date_obj = datetime.strptime(date, "%Y/%m/%d")
-                date = date_obj.strftime("%d %b %Y")
+    # Check if the JSON file request was successful
+    if response.status_code != 200:
+        print(f"Failed to read JSON file: Status Code: {response.status_code}")
+        return None, None, None, None
 
-        DFS = []
-        for version in version_names:
-            result_url = csv_url+ version + '/' + csv_path
-            csv_response = requests.get(result_url)
-            if csv_response.status_code == 200:
-                df = pd.read_csv(StringIO(csv_response.text))
+    json_data = response.json()
+    versions = json_data['versions']
+
+    # Sort version names - latest first
+    version_names = sorted(
+        [ver['version'] for ver in versions],
+        key=lambda v: float(v[1:]),
+        reverse=True
+    )
+    print(f"Found {len(version_names)} versions from get_github_data(): {version_names}.")
+
+    # Get Last updated date of the latest version
+    latest_version = version_names[0]
+    latest_date = next(
+        ver['date'] for ver in versions if ver['version'] == latest_version
+    )
+    formatted_date = datetime.strptime(latest_date, "%Y/%m/%d").strftime("%d %b %Y")
+
+    # Get Leaderboard data - for text-only + multimodal
+    github_data = {}
+
+    # Collect Dataframes
+    text_dfs = []
+    mm_dfs = []
+
+    for version in version_names:
+        # Collect CSV data in descending order of clembench-runs versions
+        # Collect Text-only data
+        text_url = f"{base_repo}{version}/results.csv"
+        csv_response = requests.get(text_url)
+        if csv_response.status_code == 200:
+            df = pd.read_csv(StringIO(csv_response.text))
+            df = process_df(df)
+            df = df.sort_values(by=df.columns[1], ascending=False)  # Sort by clemscore column
+            text_dfs.append(df)
+        else:
+            print(f"Failed to read Text-only leaderboard CSV file for version: {version}. Status Code: {csv_response.status_code}")
+
+        # Collect Multimodal data
+        if float(version[1:]) >= 1.6:
+            mm_url = f"{base_repo}{version}_multimodal/results.csv"
+            mm_response = requests.get(mm_url)
+            if mm_response.status_code == 200:
+                df = pd.read_csv(StringIO(mm_response.text))
                 df = process_df(df)
-                df = df.sort_values(by=list(df.columns)[1], ascending=False) # Sort by clemscore
-                DFS.append(df)
-            else:
-                print(f"Failed to read CSV file for version : {version}. Status Code : {resp.status_code}")
+                df = df.sort_values(by=df.columns[1], ascending=False) # Sort by clemscore column
+                mm_dfs.append(df)
+        else:
+            print(f"Failed to read multimodal leaderboard CSV file for version: {version}: Status Code: {csv_response.status_code}. Please ignore this message if multimodal results are not available for this version")
 
-        # Only keep relevant columns for the main leaderboard
-        latest_df_dummy = DFS[0]
-        all_columns = list(latest_df_dummy.columns)
-        keep_columns = all_columns[0:4]
-        latest_df_dummy = latest_df_dummy.drop(columns=[c for c in all_columns if c not in keep_columns])
+    github_data["text"] = text_dfs
+    github_data["multimodal"] = mm_dfs
+    github_data["date"] = formatted_date
 
-        latest_df = [latest_df_dummy]
-        all_dfs = []
-        all_vnames = []
-        for df, name in zip(DFS, version_names):
-            all_dfs.append(df)
-            all_vnames.append(name) 
-        return latest_df, all_dfs, all_vnames, date
-    
-    else:
-        print(f"Failed to read JSON file: Status Code : {resp.status_code}")
+    return github_data
 
 
 def process_df(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Process dataframe
-    - Remove repition in model names
-    - Convert datatypes to sort by "float" instead of "str" for sorting
+    Process dataframe:
+    - Convert datatypes to sort by "float" instead of "str"
+    - Remove repetition in model names
     - Update column names
+
     Args:
         df: Unprocessed Dataframe (after using update_cols)
+
     Returns:
         df: Processed Dataframe
     """
 
-    # Change column type to float from str
-    list_column_names = list(df.columns)
-    model_col_name = list_column_names[0]
-    for col in list_column_names:
-        if col != model_col_name:
-            df[col] = df[col].astype(float)
+    # Convert column values to float, apart from the model names column
+    for col in df.columns[1:]:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Remove repetition in model names, if any
-    models_list = []
-    for i in range(len(df)):
-        model_name = df.iloc[i][model_col_name]
-        splits = model_name.split('--')
-        splits = [split.replace('-t0.0', '') for split in splits] # Comment to not remove -t0.0
-        if splits[0] == splits[1]:
-            models_list.append(splits[0])
-        else:
-            models_list.append(splits[0] + "--" + splits[1])
-    df[model_col_name] = models_list
+    # Remove repetition in model names
+    df[df.columns[0]] = df[df.columns[0]].str.replace('-t0.0', '', regex=True)
+    df[df.columns[0]] = df[df.columns[0]].apply(lambda x: '--'.join(set(x.split('--'))))
 
     # Update column names
-    update = ['Model', 'Clemscore', '% Played', 'Quality Score']
-    game_metrics = list_column_names[4:]
+    custom_column_names = ['Model', 'Clemscore', '% Played', 'Quality Score']
+    for i, col in enumerate(df.columns[4:]):  # Start Capitalizing from the 5th column
+        parts = col.split(',')
+        custom_name = f"{parts[0].strip().capitalize()} {parts[1].strip()}"
+        custom_column_names.append(custom_name)
 
-    for col in game_metrics:
-        splits = col.split(',')
-        update.append(splits[0].capitalize() + "" + splits[1])
-    
-    map_cols = {}
-    for i in range(len(update)):
-        map_cols[list_column_names[i]] = str(update[i])
+    # Rename columns
+    df.columns = custom_column_names
 
-    df = df.rename(columns=map_cols)    
     return df
 
 
-def filter_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
+def query_search(df: pd.DataFrame, query: str) -> pd.DataFrame:
     """
-    Filter the dataframe based on the search query
+    Filter the dataframe based on the search query.
+
     Args:
-        df: Unfiltered dataframe
-        query: a string of queries separated by ";"
-    Return:
-        filtered_df: Dataframe containing searched queries in the 'Model' column
+        df (pd.DataFrame): Unfiltered dataframe.
+        query (str): A string of queries separated by ";".
+    Returns:
+        pd.DataFrame: Filtered dataframe containing searched queries in the 'Model' column.
     """
-    queries = query.split(';')
-    list_cols = list(df.columns)
-    df_len = len(df)
-    filtered_models = []
-    models_list = list(df[list_cols[0]])
-    for q in queries:
-        q = q.lower()
-        q = q.strip()
-        for i in range(df_len):
-            model_name = models_list[i]
-            if q in model_name.lower():
-                filtered_models.append(model_name) # Append model names containing query q
-
-    filtered_df = df[df[list_cols[0]].isin(filtered_models)]
-
-    if query == "":
+    if not query.strip():  # Reset Dataframe if empty query is passed
         return df
+
+    queries = [q.strip().lower() for q in query.split(';') if q.strip()]  # Normalize and split queries
+
+    # Filter dataframe based on queries in 'Model' column
+    filtered_df = df[df['Model'].str.lower().str.contains('|'.join(queries))]
 
     return filtered_df
