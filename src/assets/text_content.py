@@ -8,9 +8,12 @@ MULTIMODAL_NAME = "🥇 Multimodal CLEM Leaderboard"
 
 INTRODUCTION_TEXT = """
 <h6 align="center">
+
 The CLEM Leaderboard aims to track, rank and evaluate current cLLMs (chat-optimized Large Language Models) with the suggested pronounciation “clems”. 
 
 The benchmarking approach is described in [Clembench: Using Game Play to Evaluate Chat-Optimized Language Models as Conversational Agents](https://aclanthology.org/2023.emnlp-main.689.pdf).
+
+The multimodal benchmark is described in [Two Giraffes in a Dirt Field: Using Game Play to Investigate Situation Modelling in Large Multimodal Models](https://arxiv.org/abs/2406.14035)
 
 Source code for benchmarking "clems" is available here: [Clembench](https://github.com/clembench/clembench)
 

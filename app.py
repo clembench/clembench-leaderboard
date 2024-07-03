@@ -14,7 +14,7 @@ from src.version_utils import get_versions_data
 CONSTANTS
 """
 # For restarting the gradio application every 24 Hrs
-TIME = 86400  # in seconds # Reload will not work locally - requires HFToken # The app launches locally as expected - only without the reload utility
+TIME = 43200  # in seconds # Reload will not work locally - requires HFToken # The app launches locally as expected - only without the reload utility
 # For Leaderboard table
 dataframe_height = 800  # Height of the table in pixels # Set on average considering all possible devices
 
@@ -169,7 +169,7 @@ with hf_app:
                 open_models_selection = update_open_models()
                 clear_button_1 = gr.ClearButton(open_models_selection)
 
-            with gr.Accordion("Select Closed-weight Models 💼", open=False):
+            with gr.Accordion("Select Commercial Models 💰", open=False):
                 closed_models_selection = update_closed_models()
                 clear_button_2 = gr.ClearButton(closed_models_selection)
 
