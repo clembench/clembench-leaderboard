@@ -128,7 +128,7 @@ with hf_app:
 
             # Show information about the clemscore and last updated date below the table
             gr.HTML(CLEMSCORE_TEXT)
-            gr.HTML(f"Last updated - {github_data['date']}")
+            gr.HTML(f"Last updated - {github_data['mm_date']}")
 
             # Add a dummy leaderboard to handle search queries in leaderboard_table
             # This will show a temporary leaderboard based on the searched value

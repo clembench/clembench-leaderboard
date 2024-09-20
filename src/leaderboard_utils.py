@@ -31,16 +31,9 @@ def get_github_data():
 
     version_names = sorted(
         [ver['version'] for ver in versions],
-        key=lambda v: list(map(int, v[1:].split('_')[0].split('.'))),  # {{ edit_1 }}: Corrected slicing to handle 'v' prefix
+        key=lambda v: list(map(int, v[1:].split('_')[0].split('.'))),  
         reverse=True
     )   
-
-    # Get Last updated date of the latest version
-    latest_version = version_names[0]
-    latest_date = next(
-        ver['date'] for ver in versions if ver['version'] == latest_version
-    )
-    formatted_date = datetime.strptime(latest_date, "%Y-%m-%d").strftime("%d %b %Y")  # {{ edit_1 }}: Updated date format
 
     # Get Leaderboard data - for text-only + multimodal
     github_data = {}
@@ -48,6 +41,11 @@ def get_github_data():
     # Collect Dataframes
     text_dfs = []
     mm_dfs = []
+
+    text_flag = True
+    text_date = ""
+    mm_flag = True
+    mm_date = ""
 
     for version in version_names:
         # Collect CSV data in descending order of clembench-runs versions
@@ -60,22 +58,33 @@ def get_github_data():
                 df = process_df(df)
                 df = df.sort_values(by=df.columns[1], ascending=False)  # Sort by clemscore column
                 text_dfs.append(df)
+                if text_flag:
+                    text_flag = False
+                    text_date = next(ver['date'] for ver in versions if ver['version'] == version)
+                    text_date = datetime.strptime(text_date, "%Y-%m-%d").strftime("%d %b %Y")  
+
             else:
                 print(f"Failed to read Text-only leaderboard CSV file for version: {version}. Status Code: {csv_response.status_code}")
 
         # Check if version ends with 'multimodal' before constructing the URL
         mm_suffix = "_multimodal" if not version.endswith('multimodal') else ""
-        mm_url = f"{base_repo}{version}{mm_suffix}/results.csv"  # {{ edit_1 }}: Conditional suffix for multimodal
+        mm_url = f"{base_repo}{version}{mm_suffix}/results.csv" 
         mm_response = requests.get(mm_url)
         if mm_response.status_code == 200:
             df = pd.read_csv(StringIO(mm_response.text))
             df = process_df(df)
             df = df.sort_values(by=df.columns[1], ascending=False) # Sort by clemscore column
             mm_dfs.append(df)
+            if mm_flag:
+                mm_flag = False
+                mm_date = next(ver['date'] for ver in versions if ver['version'] == version)
+                mm_date = datetime.strptime(mm_date, "%Y-%m-%d").strftime("%d %b %Y")
+
       
     github_data["text"] = text_dfs
     github_data["multimodal"] = mm_dfs
-    github_data["date"] = formatted_date
+    github_data["date"] = text_date
+    github_data["mm_date"] = mm_date
 
     return github_data
 
