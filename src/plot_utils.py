@@ -127,27 +127,22 @@ def split_models(model_list: list):
     """
     Split the models into open source and commercial
     """
-
     open_models = []
     commercial_models = []
-    open_backends = {"huggingface_local", "huggingface_multimodal", "openai_compatible"}  # Define backends considered as open
-
+    
     # Load model registry data from main repo
     model_registry_url = "https://raw.githubusercontent.com/clp-research/clembench/main/backends/model_registry.json"
     response = requests.get(model_registry_url)
 
     if response.status_code == 200:
         json_data = json.loads(response.text)
-        # Classify as Open or Commercial based on the defined backend in the model registry
-        backend_mapping = {}
 
         for model_name in model_list:
-            model_prefix = model_name.split('-')[0]  # Get the prefix part of the model name
             for entry in json_data:
-                if entry["model_name"].startswith(model_prefix):
-                    backend = entry["backend"]
-                    # Classify based on backend
-                    if backend in open_backends:
+                if entry["model_name"] == model_name:
+                    open_model = entry["open_weight"]
+                    
+                    if open_model:
                         open_models.append(model_name)
                     else:
                         commercial_models.append(model_name)
