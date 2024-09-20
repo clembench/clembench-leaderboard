@@ -31,20 +31,18 @@ def get_versions_data():
     json_data = response.json()
     versions = json_data['versions']
 
-    # Sort version names - latest first
     version_names = sorted(
         [ver['version'] for ver in versions],
-        key=lambda v: float(v[1:]),
+        key=lambda v: list(map(int, v[1:].split('_')[0].split('.'))),  # {{ edit_1 }}: Corrected slicing to handle 'v' prefix
         reverse=True
-    )
-    print(f"Found {len(version_names)} versions from get_versions_data(): {version_names}.")
+    )   
 
     # Get Last updated date of the latest version
     latest_version = version_names[0]
     latest_date = next(
         ver['date'] for ver in versions if ver['version'] == latest_version
     )
-    formatted_date = datetime.strptime(latest_date, "%Y/%m/%d").strftime("%d %b %Y")
+    formatted_date = datetime.strptime(latest_date, "%Y-%m-%d").strftime("%d %b %Y")  # {{ edit_1 }}: Updated date format
 
     # Get Versions data
     versions_data = {"latest": latest_version, "date": formatted_date}
