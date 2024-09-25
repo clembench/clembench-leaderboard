@@ -13,7 +13,7 @@ The CLEM Leaderboard aims to track, rank and evaluate current cLLMs (chat-optimi
 
 The benchmarking approach is described in [Clembench: Using Game Play to Evaluate Chat-Optimized Language Models as Conversational Agents](https://aclanthology.org/2023.emnlp-main.689.pdf).
 
-The multimodal benchmark is described in [Two Giraffes in a Dirt Field: Using Game Play to Investigate Situation Modelling in Large Multimodal Models](https://arxiv.org/abs/2406.14035)
+The multimodal benchmark is described in [Using Game Play to Investigate Multimodal and Conversational Grounding in Large Multimodal Models](https://arxiv.org/abs/2406.14035)
 
 Source code for benchmarking "clems" is available here: [Clembench](https://github.com/clembench/clembench)
 
