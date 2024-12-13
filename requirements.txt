@@ -1,4 +1,4 @@
-gradio==4.40.0
+gradio==5.8.0
 pandas==2.2.2
 plotly==5.18.0
 apscheduler==3.10.4
