@@ -9,18 +9,20 @@ import json
 from io import StringIO
 
 from src.leaderboard_utils import process_df
-from src.assets.text_content import REPO
+from src.assets.text_content import REPO, BENCHMARK_FILE
 
-def get_versions_data():
+VARIANTS = ['ascii', 'backends', 'quantized'] # Include other variants if added in the main clembench-runs repo
+
+def get_version_data():
     """
     Read and process data from CSV files of all available versions hosted on GitHub. - https://github.com/clembench/clembench-runs
 
     Returns:
-        versions_data:
+        version_data:
             -
     """
     base_repo = REPO
-    json_url = base_repo + "benchmark_runs.json"
+    json_url = base_repo + BENCHMARK_FILE
     response = requests.get(json_url)
 
     # Check if the JSON file request was successful
@@ -37,51 +39,44 @@ def get_versions_data():
         reverse=True
     )   
 
-    # Get Last updated date of the latest version
-    latest_version = version_names[0]
-    latest_date = next(
-        ver['date'] for ver in versions if ver['version'] == latest_version
-    )
-    formatted_date = datetime.strptime(latest_date, "%Y-%m-%d").strftime("%d %b %Y") 
-
-    # Get Versions data
-    versions_data = {"latest": latest_version, "date": formatted_date}
-
-    # Collect Dataframes
-    dfs = []
+    version_data  = {
+        'versions': [],
+        'dataframes': []
+    }
 
     for version in version_names:
-        text_url = f"{base_repo}{version}/results.csv"
-        mm_url = f"{base_repo}{version}_multimodal/results.csv"
-        quant_url = f"{base_repo}{version}_quantized/results.csv"
-
-        # Text Data
-        response = requests.get(text_url)
+        base_url = f"{base_repo}{version}/results.csv"
+        response = requests.get(base_url)
         if response.status_code == 200:
             df = pd.read_csv(StringIO(response.text))
             df = process_df(df)
             df = df.sort_values(by=df.columns[1], ascending=False)  # Sort by clemscore column
-            versions_data[version] = df
+            version_data['dataframes'].append(df)
+            metadata = {
+                'name': version,
+                'last_updated': [datetime.strptime(v['last_updated'], '%Y-%m-%d').strftime("%d %b %Y") for v in versions if v['version'] == version],
+                'release_date': [datetime.strptime(v['release_date'], '%Y-%m-%d').strftime("%d %b %Y") for v in versions if v['version'] == version]
+            } 
+            version_data['versions'].append(metadata)
 
-        # Multimodal Data
-        mm_response = requests.get(mm_url)
-        if mm_response.status_code == 200:
-            mm_df = pd.read_csv(StringIO(mm_response.text))
-            mm_df = process_df(mm_df)
-            mm_df = mm_df.sort_values(by=mm_df.columns[1], ascending=False)  # Sort by clemscore column
-            versions_data[version+"_multimodal"] = mm_df
+        # Look for variant results file
+        version = version.split('_')[0] # Remove _multimodal suffix, and check for other suffixes
+        for suffix in VARIANTS:
+            base_url = f"{base_repo}{version}_{suffix}/results.csv"
+            response = requests.get(base_url)
+            if response.status_code == 200:
+                df = pd.read_csv(StringIO(response.text))
+                df = process_df(df)
+                df = df.sort_values(by=df.columns[1], ascending=False)  # Sort by clemscore column
+                version_data['dataframes'].append(df)
+                metadata = {
+                    'name': version + "_" + suffix # Skip Release date and last updated # Not included in becnhmark_runs.json
+                } 
+                version_data['versions'].append(metadata)
 
-        # Multimodal Data
-        q_response = requests.get(quant_url)
-        if q_response.status_code == 200:
-            q_df = pd.read_csv(StringIO(q_response.text))
-            q_df = process_df(q_df)
-            q_df = q_df.sort_values(by=q_df.columns[1], ascending=False)  # Sort by clemscore column
-            versions_data[version + "_quantized"] = q_df
-
-    return versions_data
+    return version_data
 
 
 if __name__ == "__main__":
-    versions_data = get_versions_data()
-    print(versions_data.keys())
+    version_data = get_version_data()
+    print(version_data['versions'])

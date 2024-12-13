@@ -8,15 +8,14 @@ from src.assets.text_content import TITLE, INTRODUCTION_TEXT, CLEMSCORE_TEXT, MU
 from src.leaderboard_utils import query_search, get_github_data
 from src.plot_utils import split_models, plotly_plot, get_plot_df, update_open_models, update_closed_models
 from src.plot_utils import reset_show_all, reset_show_names, reset_show_legend, reset_mobile_view
-from src.version_utils import get_versions_data
+from src.version_utils import get_version_data
+from src.trend_utils import get_final_trend_plot
 
 """ 
 CONSTANTS
 """
 # For restarting the gradio application every 24 Hrs
 TIME = 43200  # in seconds # Reload will not work locally - requires HFToken # The app launches locally as expected - only without the reload utility
-# For Leaderboard table
-dataframe_height = 800  # Height of the table in pixels # Set on average considering all possible devices
 
 
 """
@@ -33,29 +32,29 @@ def restart_space():
 GITHUB UTILS
 """
 github_data = get_github_data()
-text_leaderboard = github_data["text"][0]  # Get the text-only leaderboard for its available latest version
-multimodal_leaderboard = github_data["multimodal"][0]  # Get multimodal leaderboard for its available latest version.
+text_leaderboard = github_data["text"]["dataframes"][0]  # Get the latest version of text-only leaderboard
+multimodal_leaderboard = github_data["multimodal"]["dataframes"][0]  # Get the latest version of multimodal leaderboard
 
 # Show only First 4 columns for the leaderboards
+# Should be Model Name, Clemscore, %Played, and Quality Score
 text_leaderboard = text_leaderboard.iloc[:, :4]
-print(f"Showing the following columns for the latest leaderboard: {text_leaderboard.columns}")
 multimodal_leaderboard = multimodal_leaderboard.iloc[:, :4]
-print(f"Showing the following columns for the multimodal leaderboard: {multimodal_leaderboard.columns}")
 
 
 """
 VERSIONS UTILS
 """
-versions_data = get_versions_data()
-latest_version = versions_data['latest']  # Always show latest version in text-only benchmark
-last_updated_date = versions_data['date']
-version_names = list(versions_data.keys())
-version_names = [v for v in version_names if v.startswith("v")]  # Remove "latest" and "date" keys
+versions_data = get_version_data()
+latest_version = versions_data['versions'][0]['name']
+last_updated_date = versions_data['versions'][0]['last_updated'][0]
+version_names = [v['name'] for v in versions_data['versions']]
 
 global version_df
-version_df = versions_data[latest_version]
+version_df = versions_data['dataframes'][0]
 def select_version_df(name):
-    return versions_data[name]
+    for i, v in enumerate(versions_data['versions']):
+        if v['name'] == name:
+            return versions_data['dataframes'][i]
 
 """
 MAIN APPLICATION
@@ -82,13 +81,12 @@ with hf_app:
                 value=text_leaderboard,
                 elem_id="text-leaderboard-table",
                 interactive=False,
-                visible=True,
-                height=dataframe_height
+                visible=True
             )
 
             # Show information about the clemscore and last updated date below the table
             gr.HTML(CLEMSCORE_TEXT)
-            gr.HTML(f"Last updated - {github_data['date']}")
+            gr.HTML(f"Last updated - {github_data['text']['version_data'][0]['last_updated'][0]}")
 
             # Add a dummy leaderboard to handle search queries in leaderboard_table
             # This will show a temporary leaderboard based on the searched value
@@ -122,13 +120,12 @@ with hf_app:
                 value=multimodal_leaderboard,
                 elem_id="mm-leaderboard-table",
                 interactive=False,
-                visible=True,
-                height=dataframe_height
+                visible=True
             )
 
             # Show information about the clemscore and last updated date below the table
             gr.HTML(CLEMSCORE_TEXT)
-            gr.HTML(f"Last updated - {github_data['mm_date']}")
+            gr.HTML(f"Last updated - {github_data['multimodal']['version_data'][0]['last_updated'][0]}")
 
             # Add a dummy leaderboard to handle search queries in leaderboard_table
             # This will show a temporary leaderboard based on the searched value
@@ -150,7 +147,7 @@ with hf_app:
         """
         #######################       THIRD TAB - PLOTS - %PLAYED V/S QUALITY SCORE     #######################
         """
-        with gr.TabItem("📈 Plots", elem_id="plots", id=2):
+        with gr.TabItem("📊 Plots", elem_id="plots", id=2):
             """
             DropDown Select for Text/Multimodal Leaderboard
             """
@@ -304,7 +301,7 @@ with hf_app:
                 queue=True
             )
 
-            ## Implement Feature - Reset Plot when Leaderboard selection changes
+            ## Reset Plot when Leaderboard selection changes
             leaderboard_selection.change(
                 reset_show_all,
                 outputs=[show_all],
@@ -342,9 +339,52 @@ with hf_app:
             )
 
         """
-        #######################       FOURTH TAB - VERSIONS AND DETAILS     #######################
+        #######################       FOURTH TAB - TRENDS     #######################
         """
-        with gr.TabItem("🔄 Versions and Details", elem_id="versions-details-tab", id=3):
+        with gr.TabItem("📈Trends", elem_id="trends-tab", id=3):
+            with gr.Row():
+                mkd_text = gr.Markdown("### Commercial v/s Open-Weight models - clemscore over time.  The size of the circles represents the scaled value of the parameters of the models. Larger circles indicate higher parameter values.")
+    
+            with gr.Row():
+                with gr.Column(scale=3):
+                    trend_select = gr.Dropdown(
+                        choices=["Text", "Multimodal"],
+                        value=None,
+                        label="Select Benchmark 🔍",
+                        elem_id="value-select-7",
+                        interactive=True,
+                    )
+                with gr.Column(scale=1):
+                    mobile_view = gr.CheckboxGroup(
+                        choices=["Mobile View"],
+                        value=[],
+                        label="View plot on smaller screens 📱",
+                        elem_id="value-select-8",
+                        interactive=True,
+                    )
+
+            with gr.Row():
+                trend_plot = gr.Plot(show_label=False)
+
+            trend_select.change(
+                get_final_trend_plot,
+                [trend_select, mobile_view],
+                [trend_plot],
+                queue=True
+            )
+
+            mobile_view.change(
+                get_final_trend_plot,
+                [trend_select, mobile_view],
+                [trend_plot],
+                queue=True
+            )
+ 
+            
+        """
+        #######################       FIFTH TAB - VERSIONS AND DETAILS     #######################
+        """
+        with gr.TabItem("🔄 Versions and Details", elem_id="versions-details-tab", id=4):
             with gr.Row():
                 version_select = gr.Dropdown(
                     version_names, label="Select Version 🕹️", value=latest_version
@@ -360,8 +400,7 @@ with hf_app:
                 value=version_df,
                 elem_id="version-leaderboard-table",
                 interactive=False,
-                visible=True,
-                height=dataframe_height
+                visible=True
             )
 
             dummy_prev_table = gr.Dataframe(

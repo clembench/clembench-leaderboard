@@ -173,7 +173,7 @@ def update_open_models(leaderboard: str = TEXT_NAME):
         Updated checkbox group for Open Models, based on the leaderboard selected
     """
     github_data = get_github_data()
-    leaderboard_data = github_data["text" if leaderboard == TEXT_NAME else "multimodal"][0]
+    leaderboard_data = github_data["text" if leaderboard == TEXT_NAME else "multimodal"]['dataframes'][0]
     models = leaderboard_data.iloc[:, 0].unique().tolist()
     open_models, commercial_models = split_models(models)
     return gr.CheckboxGroup(
@@ -193,7 +193,7 @@ def update_closed_models(leaderboard: str = TEXT_NAME):
         Updated checkbox group for Closed Models, based on the leaderboard selected
     """
     github_data = get_github_data()
-    leaderboard_data = github_data["text" if leaderboard == TEXT_NAME else "multimodal"][0]
+    leaderboard_data = github_data["text" if leaderboard == TEXT_NAME else "multimodal"]['dataframes'][0]
     models = leaderboard_data.iloc[:, 0].unique().tolist()
     open_models, commercial_models = split_models(models)
     return gr.CheckboxGroup(
@@ -212,7 +212,7 @@ def get_plot_df(leaderboard: str = TEXT_NAME) -> pd.DataFrame:
         DataFrame with model data.
     """
     github_data = get_github_data()
-    return github_data["text" if leaderboard == TEXT_NAME else "multimodal"][0]
+    return github_data["text" if leaderboard == TEXT_NAME else "multimodal"]['dataframes'][0]
 
 
 """
