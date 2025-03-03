@@ -95,8 +95,21 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
     # Remove repetition in model names
-    df[df.columns[0]] = df[df.columns[0]].str.replace('-t0.0', '', regex=True)
+    df[df.columns[0]] = df[df.columns[0]].str.replace(r'-t[0-1]\.\d+', '', regex=True)
     df[df.columns[0]] = df[df.columns[0]].apply(lambda x: '--'.join(set(x.split('--'))))
+
+    # Rename the first column to 'Model' if it starts with 'Unnamed'
+    if df.columns[0].startswith('Unnamed'):
+        df.rename(columns={df.columns[0]: 'Model'}, inplace=True)
+
+    # Define the desired column order
+    desired_columns = ['Model', '-, clemscore', 'all, Average % Played', 'all, Average Quality Score']
+
+    # Ensure the DataFrame has all the desired columns
+    existing_columns = [col for col in desired_columns if col in df.columns]
+
+    # Reorder other DataFrame columns
+    df = df[existing_columns + [col for col in df.columns if col not in existing_columns]]
 
     # Update column names
     custom_column_names = ['Model', 'Clemscore', '% Played', 'Quality Score']
@@ -107,7 +120,7 @@ def process_df(df: pd.DataFrame) -> pd.DataFrame:
 
     # Rename columns
     df.columns = custom_column_names
-
+ 
     return df
 
 
