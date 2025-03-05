@@ -27,7 +27,7 @@ def get_version_data():
 
     # Check if the JSON file request was successful
     if response.status_code != 200:
-        print(f"Failed to read JSON file: Status Code: {response.status_code}")
+        print(f"Failed to read JSON file {json_url}: Status Code: {response.status_code}")
         return None, None, None, None
 
     json_data = response.json()
