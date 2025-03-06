@@ -4,7 +4,7 @@ import requests
 import json
 import gradio as gr
 
-from src.assets.text_content import SHORT_NAMES, TEXT_NAME, MULTIMODAL_NAME
+from src.assets.text_content import SHORT_NAMES, TEXT_NAME, MULTIMODAL_NAME, REGISTRY_URL
 from src.leaderboard_utils import get_github_data
 
 
@@ -131,8 +131,7 @@ def split_models(model_list: list):
     commercial_models = []
     
     # Load model registry data from main repo
-    model_registry_url = "https://raw.githubusercontent.com/clp-research/clembench/main/backends/model_registry.json"
-    response = requests.get(model_registry_url)
+    response = requests.get(REGISTRY_URL)
 
     if response.status_code == 200:
         json_data = json.loads(response.text)
@@ -149,7 +148,7 @@ def split_models(model_list: list):
                     break
 
     else:
-        print(f"Failed to read JSON file: Status Code : {response.status_code}")
+        print(f"Failed to read JSON file: {REGISTRY_URL} Status Code : {response.status_code}")
 
     open_models.sort(key=lambda o: o.upper())
     commercial_models.sort(key=lambda c: c.upper())
