@@ -274,7 +274,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
                     )
 
     fig.update_traces(
-        hovertemplate='Model Name: %{customdata[0]}<br>Release Date (Model and & Benchmark Version): %{customdata[1]}<br>Clemscore: %{customdata[2]}<br>Benchmark Version: %{customdata[3]}<br>'
+        hovertemplate='Model Name: %{customdata[0]}<br>Release Date (Model): %{customdata[1]|%Y-%m-%d}<br>Clemscore: %{customdata[2]}<br>Benchmark Version: %{customdata[3]}<br>'
     )
     
     # Sort dataframes for line plotting
