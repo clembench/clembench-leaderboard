@@ -17,12 +17,12 @@ CONSTANTS
 # For restarting the gradio application every 24 Hrs
 TIME = 43200  # in seconds # Reload will not work locally - requires HFToken # The app launches locally as expected - only without the reload utility
 
-
 """
 AUTO RESTART HF SPACE
 """
 HF_TOKEN = os.environ.get("H4_TOKEN", None)
 api = HfApi()
+
 
 def restart_space():
     api.restart_space(repo_id=HF_REPO, token=HF_TOKEN)
@@ -40,7 +40,6 @@ multimodal_leaderboard = github_data["multimodal"]["dataframes"][0]  # Get the l
 text_leaderboard = text_leaderboard.iloc[:, :4]
 multimodal_leaderboard = multimodal_leaderboard.iloc[:, :4]
 
-
 """
 VERSIONS UTILS
 """
@@ -51,17 +50,23 @@ version_names = [v['name'] for v in versions_data['versions']]
 
 global version_df
 version_df = versions_data['dataframes'][0]
+
+
 def select_version_df(name):
     for i, v in enumerate(versions_data['versions']):
         if v['name'] == name:
             return versions_data['dataframes'][i]
 
+models_list = text_leaderboard.iloc[:, 0].unique().tolist()
+open_models, commercial_models = split_models(models_list)
+initial_plot = plotly_plot(df=text_leaderboard, list_op=open_models, list_co=commercial_models,
+                         show_all=["Show All Models"], show_names=["Show Names"], show_legend=[],
+                           mobile_view=[], custom_width=1200)
 """
 MAIN APPLICATION
 """
 hf_app = gr.Blocks()
 with hf_app:
-
     gr.HTML(TITLE)
     gr.Markdown(INTRODUCTION_TEXT, elem_classes="markdown-text")
 
@@ -178,7 +183,7 @@ with hf_app:
                     show_all = gr.CheckboxGroup(
                         ["Select All Models"],
                         label="Show plot for all models 🤖",
-                        value=[],
+                        value="Select All Models",
                         elem_id="value-select-3",
                         interactive=True,
                     )
@@ -187,7 +192,7 @@ with hf_app:
                     show_names = gr.CheckboxGroup(
                         ["Show Names"],
                         label="Show names of models on the plot 🏷️",
-                        value=[],
+                        value="Show Names",
                         elem_id="value-select-4",
                         interactive=True,
                     )
@@ -223,7 +228,7 @@ with hf_app:
             with gr.Row():
                 with gr.Column():
                     # Output block for the plot
-                    plot_output = gr.Plot()
+                    plot_output = gr.Plot(initial_plot)
 
             """
             PLOT CHANGE ACTIONS
@@ -343,13 +348,14 @@ with hf_app:
         """
         with gr.TabItem("📈Trends", elem_id="trends-tab", id=3):
             with gr.Row():
-                mkd_text = gr.Markdown("### Commercial v/s Open-Weight models - clemscore over time.  The size of the circles represents the scaled value of the parameters of the models. Larger circles indicate higher parameter values.")
-    
+                mkd_text = gr.Markdown(
+                    "### Commercial v/s Open-Weight models - clemscore over time.  The size of the circles represents the scaled value of the parameters of the models. Larger circles indicate higher parameter values.")
+
             with gr.Row():
                 with gr.Column(scale=3):
                     trend_select = gr.Dropdown(
                         choices=["Text", "Multimodal"],
-                        value=None,
+                        value="Text",
                         label="Select Benchmark 🔍",
                         elem_id="value-select-7",
                         interactive=True,
@@ -364,7 +370,10 @@ with hf_app:
                     )
 
             with gr.Row():
-                trend_plot = gr.Plot(show_label=False)
+                trend_plot = gr.Plot(get_final_trend_plot(benchmark="Text",
+                                                          mobile_view=False,
+                                                          custom_width=1200),
+                                     show_label=False)
 
             trend_select.change(
                 get_final_trend_plot,
@@ -379,8 +388,7 @@ with hf_app:
                 [trend_plot],
                 queue=True
             )
- 
-            
+
         """
         #######################       FIFTH TAB - VERSIONS AND DETAILS     #######################
         """
