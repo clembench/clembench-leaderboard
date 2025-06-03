@@ -10,7 +10,7 @@ from src.leaderboard_utils import get_github_data
 
 def plotly_plot(df: pd.DataFrame, list_op: list, list_co: list,
                 show_all: list, show_names: list, show_legend: list,
-                mobile_view: list):
+                mobile_view: list, custom_width: int = None):
     """
     Takes in a list of models for a plotly plot
     Args:
@@ -62,22 +62,27 @@ def plotly_plot(df: pd.DataFrame, list_op: list, list_co: list,
     fig.update_yaxes(range=[-5, 105])
 
     if mobile_view:
-        fig.update_layout(height=300)
-
-    if mobile_view and show_legend:
-        fig.update_layout(height=450)
-        fig.update_layout(legend=dict(
-            yanchor="bottom",
-            y=-5.52,
-            xanchor="left",
-            x=0.01
-        ))
-
+        # Fix plot dimensions for a cleaner view
         fig.update_layout(
-            xaxis_title="",
-            yaxis_title="",
-            title="% Played v/s Quality Score"
+            height=400,  # shorter plot for mobile
+            margin=dict(l=10, r=10, t=30, b=40),
+            font=dict(size=5),
+            legend=dict(font=dict(size=7),
+                        bgcolor='rgba(255,255,255,0.7)',  # semi-transparent white for mobile
+                        bordercolor='rgba(0,0,0,0.05)',
+                        yanchor="bottom",
+                        y=-5.52,
+                        xanchor="left",
+                        x=0.01
+                        ),
+            xaxis=dict(tickfont=dict(size=7)),
+            yaxis=dict(tickfont=dict(size=7)),
+            title=dict(font=dict(size=13)),
+
         )
+
+    if custom_width:
+        fig.update_layout(width=custom_width)
 
     return fig
 

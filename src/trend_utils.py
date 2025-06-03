@@ -17,6 +17,7 @@ START_DATE = '2023-06-01'
 COLOUR_OPEN = 'red'
 COLOUR_COMM = 'blue'
 
+
 def get_param_size(params: str) -> float:
     """Convert parameter size from string to float.
 
@@ -40,6 +41,7 @@ def get_param_size(params: str) -> float:
             print("Not a valid parameter size")
 
     return param_size
+
 
 def date_difference(date_str1: str, date_str2: str) -> int:
     """Calculate the difference in days between two dates.
@@ -104,14 +106,15 @@ def get_models_to_display(result_df: pd.DataFrame, open_dip: float = 0, comm_dip
     Returns:
         tuple: Two lists of model names (open and commercial).
     """
-    open_model_df = result_df[result_df['open_weight']==True]
-    comm_model_df = result_df[result_df['open_weight']==False]
+    open_model_df = result_df[result_df['open_weight'] == True]
+    comm_model_df = result_df[result_df['open_weight'] == False]
 
     open_model_df = open_model_df.sort_values(by='release_date', ascending=True)
     comm_model_df = comm_model_df.sort_values(by='release_date', ascending=True)
     open_models = populate_list(open_model_df, open_dip)
     comm_models = populate_list(comm_model_df, comm_dip)
     return open_models, comm_models
+
 
 # Function to interpolate between two colors
 def interpolate_color(rank_val, start_color):
@@ -122,9 +125,10 @@ def interpolate_color(rank_val, start_color):
     elif start_color == 'blue':
         hue = 240
     else:
-        raise KeyError(f"Invalid color selected for trend graph: {start_color}. Please set either red or blue. Alternatively, set hue value in src.trend_utils.interpolate_colour")
-    
-    saturation = rank_val*100
+        raise KeyError(
+            f"Invalid color selected for trend graph: {start_color}. Please set either red or blue. Alternatively, set hue value in src.trend_utils.interpolate_colour")
+
+    saturation = rank_val * 100
     value = 70 if rank_val == 1 else 100
 
     return f"hsv({hue},{saturation},{value})"
@@ -141,7 +145,8 @@ def get_trend_data(text_data: dict, model_registry_data: list) -> pd.DataFrame:
         pd.DataFrame: DataFrame containing processed model data.
     """
     visited = set()  # Track models that have been processed
-    result_df = pd.DataFrame(columns=['model', 'clemscore', 'open_weight', 'release_date', 'parameters', 'est_flag', 'version'])
+    result_df = pd.DataFrame(
+        columns=['model', 'clemscore', 'open_weight', 'release_date', 'parameters', 'est_flag', 'version'])
 
     text_dfs = text_data['dataframes']
     for i in range(len(text_dfs)):
@@ -153,7 +158,7 @@ def get_trend_data(text_data: dict, model_registry_data: list) -> pd.DataFrame:
                 visited.add(model_name)
                 for dict_obj in model_registry_data:
                     if dict_obj["model_name"] == model_name:
-                        if dict_obj["parameters"] == "" :
+                        if dict_obj["parameters"] == "":
                             params = "1000B"
                             est_flag = True
                         else:
@@ -161,17 +166,19 @@ def get_trend_data(text_data: dict, model_registry_data: list) -> pd.DataFrame:
                             est_flag = False
 
                         param_size = get_param_size(params)
-                            
-                        new_data = {'model': model_name, 'clemscore': df['Clemscore'].iloc[i], 'open_weight':dict_obj['open_weight'],
-                                    'release_date': dict_obj['release_date'], 'parameters': param_size, 'est_flag': est_flag, 'version': version}
+
+                        new_data = {'model': model_name, 'clemscore': df['Clemscore'].iloc[i],
+                                    'open_weight': dict_obj['open_weight'],
+                                    'release_date': dict_obj['release_date'], 'parameters': param_size,
+                                    'est_flag': est_flag, 'version': version}
                         result_df.loc[len(result_df)] = new_data
                         break
-    
+
     return result_df  # Return the compiled DataFrame
 
 
 def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '2024-12-30',
-             benchmark_ticks: dict = {}, benchmark_update = {}, **plot_kwargs) -> go.Figure:
+             benchmark_ticks: dict = {}, benchmark_update={}, **plot_kwargs) -> go.Figure:
     """Generate a scatter plot for the given DataFrame.
 
     Args:
@@ -180,7 +187,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
         end_date (str, optional): End date for filtering. Defaults to '2024-12-30'.
         benchmark_ticks (dict, optional): Custom benchmark ticks for the version dates. Defaults to {}.
         benchmark_update (dict, optional): Custom benchmark metadata containing last_updated date for the versions. Defaults to {}.
-    
+
     Keyword Args:
         open_dip (float, optional): Threshold for open models' clemscore differences. Max dip in clemscore allowed to be considered in trend.
         comm_dip (float, optional): Threshold for commercial models' clemscore differences. Max dip in clemscore allowed to be considered in trend.
@@ -204,7 +211,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
 
     # Filter out data before April 2023/START_DATE
     df = df[df['Release Date (Model and & Benchmark Version)'] >= pd.to_datetime(start_date)]
-    open_model_list, comm_model_list = get_models_to_display(df, open_dip, comm_dip)    
+    open_model_list, comm_model_list = get_models_to_display(df, open_dip, comm_dip)
     models_to_display = open_model_list + comm_model_list
 
     # Create a column to indicate if the model should be labeled
@@ -217,11 +224,11 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     versions = df['version'].unique()
     version_names = sorted(
         [ver for ver in versions],
-        key=lambda v: list(map(int, v[1:].split('_')[0].split('.'))),  
+        key=lambda v: list(map(int, v[1:].split('_')[0].split('.'))),
         reverse=True
-    ) 
+    )
 
-    version_names = version_names[:3] # Select 3 latest benchmark versions
+    version_names = version_names[:3]  # Select 3 latest benchmark versions
     df = df[df['version'].isin(tuple(version_names))]
 
     rank = 2
@@ -229,7 +236,7 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     rank_value = {version_names[0]: 1}
     for ver in version_names:
         if ver not in rank_value:
-            rank_value[ver] = 1 - (rank-1-(max_rank/15))/(max_rank-1)
+            rank_value[ver] = 1 - (rank - 1 - (max_rank / 15)) / (max_rank - 1)
             rank += 1
 
     df['color_value'] = df.apply(
@@ -247,36 +254,40 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
     for i in range(len(df)):
         if df.iloc[i]['Model Type & Benchmark Version'] not in color_map:
             if df.iloc[i]['open_weight']:
-                color_map[df.iloc[i]['Model Type & Benchmark Version']] = interpolate_color(df.iloc[i]['color_value'], COLOUR_OPEN)
+                color_map[df.iloc[i]['Model Type & Benchmark Version']] = interpolate_color(df.iloc[i]['color_value'],
+                                                                                            COLOUR_OPEN)
             else:
-                color_map[df.iloc[i]['Model Type & Benchmark Version']] = interpolate_color(df.iloc[i]['color_value'], COLOUR_COMM)
+                color_map[df.iloc[i]['Model Type & Benchmark Version']] = interpolate_color(df.iloc[i]['color_value'],
+                                                                                            COLOUR_COMM)
 
-    
-    marker_size = df['parameters'].apply(lambda x: np.sqrt(x) if x > 0 else np.sqrt(400)).astype(float)  # Arbitrary sqrt value to scale marker size based on parameter size
+    marker_size = df['parameters'].apply(lambda x: np.sqrt(x) if x > 0 else np.sqrt(400)).astype(
+        float)  # Arbitrary sqrt value to scale marker size based on parameter size
 
     # Create the scatter plot
     fig = px.scatter(df,
-                    x="Release Date (Model and & Benchmark Version)",
-                    y="clemscore",
-                    color="Model Type & Benchmark Version",  # Differentiates the datasets by color
-                    color_discrete_map=color_map,  # Map colors to the defined subclasses
-                    hover_name="model",
-                    size=marker_size,
-                    size_max=40,  # Max size of the circles
-                    template="plotly_white",
-                    hover_data={  # Customize hover information
-                        "Release Date (Model and & Benchmark Version)": True,  # Show the Release Date (Model and & Benchmark Version)
-                        "clemscore": True,  # Show the clemscore
-                        "version": True
-                    },
-                    custom_data=["model", "Release Date (Model and & Benchmark Version)", "clemscore", "version"],  # Specify custom data columns for hover
-                    opacity=0.8
-                    )
+                     x="Release Date (Model and & Benchmark Version)",
+                     y="clemscore",
+                     color="Model Type & Benchmark Version",  # Differentiates the datasets by color
+                     color_discrete_map=color_map,  # Map colors to the defined subclasses
+                     hover_name="model",
+                     size=marker_size,
+                     size_max=40,  # Max size of the circles
+                     template="plotly_white",
+                     hover_data={  # Customize hover information
+                         "Release Date (Model and & Benchmark Version)": True,
+                         # Show the Release Date (Model and & Benchmark Version)
+                         "clemscore": True,  # Show the clemscore
+                         "version": True
+                     },
+                     custom_data=["model", "Release Date (Model and & Benchmark Version)", "clemscore", "version"],
+                     # Specify custom data columns for hover
+                     opacity=0.8
+                     )
 
     fig.update_traces(
         hovertemplate='Model Name: %{customdata[0]}<br>Release Date (Model): %{customdata[1]|%Y-%m-%d}<br>Clemscore: %{customdata[2]}<br>Benchmark Version: %{customdata[3]}<br>'
     )
-    
+
     # Sort dataframes for line plotting
     df_open = df[df['model'].isin(open_model_list)].sort_values(by='Release Date (Model and & Benchmark Version)')
     df_commercial = df[df['model'].isin(comm_model_list)].sort_values(by='Release Date (Model and & Benchmark Version)')
@@ -292,85 +303,96 @@ def get_plot(df: pd.DataFrame, start_date: str = '2023-06-01', end_date: str = '
 
     ## Benchmark Version ticks
     benchmark_tickvals = list(pd.to_datetime(list(benchmark_ticks.keys())))
-    custom_ticks = {k:v for k,v in custom_ticks.items() if k not in benchmark_tickvals}
+    custom_ticks = {k: v for k, v in custom_ticks.items() if k not in benchmark_tickvals}
     custom_tickvals = list(custom_ticks.keys())
 
     if mobile_view:
         # Remove custom_tickvals within -1 month to +1 month of benchmark_tickvals for better visibility
         one_month = pd.DateOffset(months=1)
         filtered_custom_tickvals = [
-            date for date in custom_tickvals 
-            if not any((benchmark_date - one_month <= date <= benchmark_date + one_month) for benchmark_date in benchmark_tickvals)
+            date for date in custom_tickvals
+            if not any((benchmark_date - one_month <= date <= benchmark_date + one_month) for benchmark_date in
+                       benchmark_tickvals)
         ]
-        # Alternate <br> for benchmark ticks based on date difference (Eg. v1.6, v1.6.5 too close to each other for MM benchmark)
+
         benchmark_tick_texts = []
         for i in range(len(benchmark_tickvals)):
-            if i == 0:
-                benchmark_tick_texts.append(f"<br><br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
-            else:
-                date_diff = (benchmark_tickvals[i] - benchmark_tickvals[i - 1]).days
-                if date_diff <= 75:
-                    benchmark_tick_texts.append(f"<br><br><br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
-                else:
-                    benchmark_tick_texts.append(f"<br><br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
+            benchmark_tick_texts.append(f"<br><br><b>{benchmark_ticks[benchmark_tickvals[i]]}</b>")
         fig.update_xaxes(
             tickvals=filtered_custom_tickvals + benchmark_tickvals,  # Use filtered_custom_tickvals
-            ticktext=[f"{date.strftime('%b')}<br>{date.strftime('%y')}" for date in filtered_custom_tickvals] + 
-                      benchmark_tick_texts,  # Use the new benchmark tick texts
+            ticktext=[f"{date.strftime('%b')}<br>{date.strftime('%y')}" for date in filtered_custom_tickvals] +
+                     benchmark_tick_texts,  # Use the new benchmark tick texts
             tickangle=0,
             tickfont=dict(size=10)
         )
-        fig.update_yaxes(range=[0, 110]) # Set y-axis range to 110 for better visibility of legend and avoiding overlap with interactivity block of plotly on top-right
+        fig.update_yaxes(range=[0,
+                                110])  # Set y-axis range to 110 for better visibility of legend and avoiding overlap with interactivity block of plotly on top-right
         display_mode = 'lines+markers'
     else:
         fig.update_xaxes(
             tickvals=custom_tickvals + benchmark_tickvals,  # Use filtered_custom_tickvals
-            ticktext=[f"{date.strftime('%b')} {date.strftime('%Y')}" for date in custom_tickvals] + 
-                    [f"<br><span style='font-size:12px;'><b>{benchmark_ticks[date]}</b></span>" for date in benchmark_tickvals],  # Added <br> for vertical alignment
+            ticktext=[f"{date.strftime('%b')} {date.strftime('%Y')}" for date in custom_tickvals] +
+                     [f"<br><span style='font-size:12px;'><b>{benchmark_ticks[date]}</b></span>" for date in
+                      benchmark_tickvals],  # Added <br> for vertical alignment
             tickangle=0,
-            tickfont=dict(size=10)  
+            tickfont=dict(size=10)
         )
-        fig.update_yaxes(range=[0, max_clemscore+10])
+        fig.update_yaxes(range=[0, max_clemscore + 10])
         display_mode = 'lines+markers+text'
-
 
     # Add lines connecting the points for open models
     fig.add_trace(go.Scatter(x=df_open['Release Date (Model and & Benchmark Version)'], y=df_open['clemscore'],
-                            mode=display_mode,  # Include 'text' in the mode
-                            name='Open Models Trendline',
-                            text=df_open['label_model'],  # Use label_model for text labels
-                            textposition='top center',  # Position of the text labels
-                            line=dict(color='red'), showlegend=False))
+                             mode=display_mode,  # Include 'text' in the mode
+                             name='Open Models Trendline',
+                             text=df_open['label_model'],  # Use label_model for text labels
+                             textposition='top center',  # Position of the text labels
+                             line=dict(color='red'), showlegend=False))
 
     # Add lines connecting the points for commercial models
-    fig.add_trace(go.Scatter(x=df_commercial['Release Date (Model and & Benchmark Version)'], y=df_commercial['clemscore'],
-                            mode=display_mode,  # Include 'text' in the mode
-                            name='Commercial Models Trendline',
-                            text=df_commercial['label_model'],  # Use label_model for text labels
-                            textposition='top center',  # Position of the text labels
-                            line=dict(color='blue'), showlegend=False))
+    fig.add_trace(
+        go.Scatter(x=df_commercial['Release Date (Model and & Benchmark Version)'], y=df_commercial['clemscore'],
+                   mode=display_mode,  # Include 'text' in the mode
+                   name='Commercial Models Trendline',
+                   text=df_commercial['label_model'],  # Use label_model for text labels
+                   textposition='top center',  # Position of the text labels
+                   line=dict(color='blue'), showlegend=False))
 
-
-    # Update layout to ensure text labels are visible   
+    # Update layout to ensure text labels are visible
     fig.update_traces(textposition='top center')
 
     # Update the Legend Position and plot dimensions
     fig.update_layout(height=height,
-        legend=dict(
-            yanchor="top",
-            y=0.99,
-            xanchor="left",
-            x=0.01
-        ) 
-    )
+                      legend=dict(
+                          yanchor="top",
+                          y=0.99,
+                          xanchor="left",
+                          x=0.01
+                      )
+                      )
 
     if width:
         print("Custom Seting the Width :")
         fig.update_layout(width=width)
 
+    if mobile_view:
+        # Fix plot dimensions for a cleaner view
+        fig.update_layout(
+            height=400,  # shorter plot for mobile
+            margin=dict(l=10, r=10, t=30, b=40),
+            font=dict(size=5),
+            legend=dict(font=dict(size=7),
+                        bgcolor='rgba(255,255,255,0.7)',  # semi-transparent white for mobile
+                        bordercolor='rgba(0,0,0,0.05)'),
+            xaxis=dict(tickfont=dict(size=7)),
+            yaxis=dict(tickfont=dict(size=7)),
+            title=dict(font=dict(size=13)),
+
+        )
+
     return fig
 
-def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> go.Figure:
+
+def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False, custom_width: int = None) -> go.Figure:
     """Fetch and generate the final trend plot for all models.
 
     Args:
@@ -396,12 +418,10 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
 
     if mobile_view:
         height = 450
-        width = 375
     else:
         height = 1000
-        width = None
 
-    plot_kwargs = {'height': height, 'width': width, 'open_dip': 0, 'comm_dip': 0,
+    plot_kwargs = {'height': height, 'width': custom_width, 'open_dip': 0, 'comm_dip': 0,
                    'mobile_view': mobile_view}
 
     benchmark_ticks = {}
@@ -411,14 +431,15 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
         text_result_df = get_trend_data(text_data, model_registry_data)
         ## Get benchmark tickvalues as dates for X-axis
         for ver in versions:
-            if 'multimodal' not in ver['version']: # Skip MM specific benchmark dates
+            if 'multimodal' not in ver['version']:  # Skip MM specific benchmark dates
                 benchmark_ticks[pd.to_datetime(ver['release_date'])] = ver['version']
                 if pd.to_datetime(ver['last_updated']) not in benchmark_update:
                     benchmark_update[pd.to_datetime(ver['last_updated'])] = [ver['version']]
                 else:
                     benchmark_update[pd.to_datetime(ver['last_updated'])].append(ver['version'])
 
-        fig =  get_plot(text_result_df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, benchmark_update=benchmark_update, **plot_kwargs)
+        fig = get_plot(text_result_df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'),
+                       benchmark_ticks=benchmark_ticks, benchmark_update=benchmark_update, **plot_kwargs)
     else:
         mm_data = get_github_data()['multimodal']
         result_df = get_trend_data(mm_data, model_registry_data)
@@ -427,9 +448,11 @@ def get_final_trend_plot(benchmark: str = "Text", mobile_view: bool = False) -> 
             if 'multimodal' in ver['version']:
                 temp_ver = ver['version']
                 temp_ver = temp_ver.replace('_multimodal', '')
-                benchmark_ticks[pd.to_datetime(ver['release_date'])] = temp_ver ## MM benchmark dates considered after v1.6 (incl.)
+                benchmark_ticks[
+                    pd.to_datetime(ver['release_date'])] = temp_ver  ## MM benchmark dates considered after v1.6 (incl.)
                 benchmark_update[pd.to_datetime(ver['last_updated'])] = temp_ver
 
-        fig = get_plot(df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'), benchmark_ticks=benchmark_ticks, benchmark_update=benchmark_update, **plot_kwargs)
+        fig = get_plot(df, start_date=START_DATE, end_date=datetime.now().strftime('%Y-%m-%d'),
+                       benchmark_ticks=benchmark_ticks, benchmark_update=benchmark_update, **plot_kwargs)
 
     return fig
